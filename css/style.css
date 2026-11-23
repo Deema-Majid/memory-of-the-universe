@@ -166,7 +166,7 @@ input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;bac
 .cs.on{border-color:#FFC83D;transform:scale(1.18);box-shadow:0 0 14px var(--c)}
 .accs{display:flex;flex-wrap:wrap;gap:8px}.ac{font:700 20px Cairo;color:#fff;padding:6px 12px;border-radius:16px;border:3px solid #ffffff33;background:#141a42cc;cursor:pointer;display:flex;align-items:center;gap:6px}
 .ac b{font-size:24px}.ac.on{border-color:#FFC83D;box-shadow:0 0 12px #FFC83D88}.ac.rare{border-color:#B06BFF88}.ac.lockb{opacity:.5}
-.me canvas{width:60px;height:60px;border-radius:50%;background:#2a2f7a}
+.me canvas{width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#3a3fa0,#1c2160);border:3px solid #FFC83D88}
 #profile input[type=text]{width:420px}
 .btn.team{background:linear-gradient(135deg,#5B7CFF,#B06BFF);color:#fff;border-color:#d9ccff;position:relative}
 .btn.team i{font-style:normal;font-size:15px;background:#FFC83D;color:#2a1a00;border-radius:10px;padding:1px 8px;position:absolute;top:-12px;inset-inline-end:-8px}
@@ -186,3 +186,4 @@ input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;bac
 .chipb{font:700 22px Cairo;color:#fff;padding:8px 20px;border-radius:30px;border:3px solid #ffffff33;background:#141a42cc;cursor:pointer}
 .chipb.w.on{background:var(--c);color:#1a1030;border-color:#fff}.chipb.s.on{background:#FFC83D;color:#2a1a00;border-color:#fff}.chipb.boss{border-color:#ff4f5e88}
 .twait{font-size:28px;margin:6px 0 10px}.twait b{color:#FFE08A}
+.me{padding:6px 24px 6px 8px}

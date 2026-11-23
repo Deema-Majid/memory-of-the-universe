@@ -76,7 +76,7 @@ const UI = {
       $("#nN").onclick = () => this.closeModal(); $("#nY").onclick = () => { Save.reset(); this.closeModal(); this.toast(L("بدأت لعبة جديدة!", "New game started!")); this.menu(); }; };
     $("#mBook").onclick = () => { SFX.click(); this.book(); };
     $("#mTeam").onclick = () => { SFX.click(); if (!Save.d.profile) this.profile(() => this.team()); else this.team(); };
-    $("#mAcc").onclick = () => { SFX.click(); this.profile(() => this.menu()); }; if ($("#mMe")) { $("#mMe").onclick = () => $("#mAcc").click(); const mc = $("#meCv"), g = mc.getContext("2d"), my = ++this._bic, lp = () => { if (this._bic !== my || !document.body.contains(mc)) return; g.clearRect(0, 0, 120, 120); Robo.draw(g, myLook(), "idle", Robo.frame("idle", performance.now() / 1000), Robo.cx(60, 150), 112, 150, true, 0, performance.now() / 1000); requestAnimationFrame(lp); }; lp(); }
+    $("#mAcc").onclick = () => { SFX.click(); this.profile(() => this.menu()); }; if ($("#mMe")) { $("#mMe").onclick = () => $("#mAcc").click(); const mc = $("#meCv"), g = mc.getContext("2d"), my = ++this._bic, lp = () => { if (this._bic !== my || !document.body.contains(mc)) return; g.clearRect(0, 0, 120, 120); Robo.draw(g, myLook(), "idle", Robo.frame("idle", performance.now() / 1000), Robo.cx(60, 235), 136, 235, true, 0, performance.now() / 1000); requestAnimationFrame(lp); }; lp(); }
     $("#mStory").onclick = () => { SFX.click(); this.story(() => this.menu()); };
     $("#mSound").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); SFX.click(); this.menu(); };
   },
