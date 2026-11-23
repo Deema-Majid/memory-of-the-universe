@@ -87,7 +87,7 @@ KINDS.force = {
     if (ph === "act") { c.strokeStyle = "rgba(255,200,61,.6)"; c.setLineDash([10, 10]); c.lineWidth = 3; c.beginPath(); c.moveTo(T.gateX, GY + 28); c.lineTo(T.x0, GY + 28); c.stroke(); c.setLineDash([]); }
   },
   get hint() { return L("a = F ÷ m. غيّري القوة وقارني التسارع: النسبة F÷a ثابتة وتساوي الكتلة.", "a = F ÷ m. Change the force and compare the acceleration: the ratio F÷a stays constant and equals the mass."); },
-  robot: { x: 1330, gy: GY }
+  robot: { x: 1330, gy: GY }, terminal: 200, hz: [260, 960], frags: [[430, 360], [640, 350], [860, 340]]
 };
 
 KINDS.light = {
@@ -155,7 +155,7 @@ KINDS.light = {
       c.strokeStyle = "#BFEFFF"; c.lineWidth = 8; c.stroke(); c.fillStyle = "#FFC83D"; c.beginPath(); c.arc(m.x, m.y, 9, 0, 7); c.fill(); c.restore(); });
   },
   get hint() { return L("قِسي الزاوية بين الشعاع والعمودي على المرآة. الارتداد يحفظ هذه الزاوية. غيّري زاوية المرآة فتدور الزاوية المنعكسة ضعف ما دارت المرآة.", "Measure the angle between the beam and the normal to the mirror. Reflection keeps this angle. Rotate the mirror and the reflected beam turns twice as much."); },
-  robot: { x: 1330, gy: GY }
+  robot: { x: 1330, gy: GY }, terminal: 400, hz: [740, 1160], frags: [[860, 360], [1040, 350], [1200, 370]]
 };
 
 function gpath(M, v) {
@@ -219,7 +219,7 @@ KINDS.gravity = {
     if (!T.dead) { c.save(); c.translate(pos.x, pos.y); c.rotate(ang + (Eng.slow > 0 ? Eng.t * 14 : 0)); c.drawImage(IMG.probe, -55, -46, 110, 92); c.restore(); }
   },
   get hint() { return L("إذا ضاعفتِ السرعة صار الانحراف الربع. احسبي Δθ×v² من قراءتك: هذا الثابت يعطيك السرعة المطلوبة: v = √(ثابت ÷ Δθ).", "Doubling the speed makes the deflection a quarter. Compute Δθ×v² from your readings: this constant gives the needed speed: v = √(constant ÷ Δθ)."); },
-  robot: { x: 150, gy: 730 }
+  robot: { x: 150, gy: 730 }, terminal: 1260, hz: [480, 1120], frags: [[470, 400], [1000, 390], [1180, 400]]
 };
 
 /* ============ المحرّك ============ */
@@ -236,10 +236,13 @@ const Eng = {
   beginTask() {
     const d = this.tasks[this.ti]; this.K = KINDS[d.kind];
     if (this.code) RNG = seeded(`${this.code}|${this.wi}|${this.si}|${this.ti}`);
-    this.T = this.K.make(d.level); this.rows = []; this.fx = []; this.parts = []; this.charge = null; this.grab = null; this.drag = null; this.lowSaid = false;
+    this.T = this.K.make(d.level); this.rows = []; this.fx = []; this.parts = []; this.charge = null; this.grab = null; this.drag = null; this.lowSaid = false; this.stun = 0;
     const n = this.tasks.length > 1 ? 2 : 4; this.cells = this.sandbox ? [] : shuffle(this.K.cellsAt || this.T.cellsAt).slice(0, n).map(p => ({ x: p[0], y: p[1], got: false }));
     RNG = Math.random;
     Object.assign(this.rb, { x: this.K.robot.x, vx: 0, dir: -1, jh: 0, vy: 0, air: false, moving: false });
+    const K = this.K, fk = `${this.wi}-${this.si}`;
+    this.hz = this.sandbox ? null : { x: K.hz[0] + (K.hz[1] - K.hz[0]) * Math.random(), dir: Math.random() < .5 ? -1 : 1, kind: ["dust", "spark", "rock", ["dust", "spark", "rock"][this.ti % 3]][this.wi], spin: 0 };
+    this.frag = (!this.sandbox && this.ti === 0 && !Save.d.frags[fk]) ? { x: K.frags[this.si][0], y: K.frags[this.si][1], key: fk } : null;
     if (this.sandbox) { const T = this.T, sc = this.K.scene;
       if (sc === "force") { T.sliders.push({ label: L("كتلة الصندوق m (كغ)", "Crate mass m (kg)"), min: 1, max: 10, step: .5, key: "m" }); T.vals.push(T.m); T.goal = L("المختبر الحر: غيّري القوة والكتلة وراقبي التسارع", "Free lab: change force and mass and watch the acceleration"); }
       if (sc === "gravity") { T.sliders.push({ label: L("كتلة الكوكب M", "Planet mass M"), min: 1, max: 6, step: .5, key: "M" }); T.vals.push(T.M); T.goal = L("المختبر الحر: غيّري السرعة وكتلة الكوكب", "Free lab: change the speed and the planet's mass"); }
@@ -264,6 +267,28 @@ const Eng = {
   },
   nearMirror() { if (!this.T || this.K.scene !== "light") return null; const ms = this.phase === "act" ? this.T.mirrors : [this.T.mirrors[0]]; let best = null, bd = 130;
     ms.forEach((m, i) => { const d = Math.abs(this.rb.x - m.x); if (d < bd) { bd = d; best = i; } }); return best; },
+  interact() {
+    if (this.grab != null) { this.grab = null; SFX.click(); return; }
+    if (this.K.scene === "light" && this.nearMirror() != null) return this.toggleGrab();
+    const tx = this.K.terminal; if (!this.sandbox && tx != null && Math.abs(this.rb.x - tx) < 95) { if (this.busyNow()) return; this.setRobot("scan", 1.2); SFX.test(); this.say("archive", true); UI.hintModal(this.K.hint, true, true); return; }
+    UI.toast(this.K.scene === "light" ? L("اقتربي من مرآة أو من جهاز الأرشيف 🖥️ ثم اضغطي ↓", "Walk to a mirror or the archive terminal 🖥️, then press ↓") : L("اقتربي من جهاز الأرشيف 🖥️ ثم اضغطي ↓ لتلميح مجاني", "Walk to the archive terminal 🖥️ and press ↓ for a free hint"));
+  },
+  drawWorldBits(c) {
+    const gy = this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy, t = this.t, tx = this.K.terminal;
+    if (!this.sandbox && tx != null) { c.save(); c.fillStyle = "#2a3170"; c.fillRect(tx - 10, gy - 120, 20, 120); c.fillStyle = "#1c2250"; c.strokeStyle = "#7FE8FF"; c.lineWidth = 5; c.beginPath(); c.roundRect(tx - 62, gy - 230, 124, 110, 16); c.fill(); c.stroke();
+      c.fillStyle = "#7FE8FF"; for (let k = 0; k < 4; k++) { const w = 30 + ((Math.sin(t * 3 + k * 1.7) + 1) / 2) * 60; c.globalAlpha = .55 + .45 * Math.sin(t * 5 + k); c.fillRect(tx - 46, gy - 214 + k * 22, w, 10); } c.globalAlpha = 1;
+      c.font = "800 30px Cairo"; c.textAlign = "center"; c.fillText("🖥️", tx, gy - 248 + Math.sin(t * 3) * 4);
+      if (Math.abs(this.rb.x - tx) < 95 && (this.phase === "measure" || this.phase === "act")) { c.fillStyle = "#FFC83D"; c.font = "800 28px Cairo"; c.fillText(L("↓ تلميح مجاني", "↓ free hint"), tx, gy - 290); } c.restore(); }
+    const fr = this.frag; if (fr && !fr.got) { const y = fr.y + Math.sin(t * 2.5) * 8; c.save(); const g = c.createRadialGradient(fr.x, y, 0, fr.x, y, 70); g.addColorStop(0, "rgba(127,232,255,.7)"); g.addColorStop(1, "rgba(127,232,255,0)"); c.fillStyle = g; c.beginPath(); c.arc(fr.x, y, 70, 0, 7); c.fill();
+      c.translate(fr.x, y); c.rotate(Math.sin(t * 2) * .2); c.fillStyle = "#BFF4FF"; c.strokeStyle = "#fff"; c.lineWidth = 3; c.beginPath(); c.moveTo(0, -36); c.lineTo(22, -6); c.lineTo(0, 36); c.lineTo(-22, -6); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = "#7FE8FF"; c.beginPath(); c.moveTo(0, -36); c.lineTo(22, -6); c.lineTo(0, 0); c.closePath(); c.fill(); c.restore(); }
+    const hz = this.hz; if (hz) { const y = gy - 46; c.save(); c.translate(hz.x, y);
+      if (hz.kind === "spark") { const g = c.createRadialGradient(0, 0, 0, 0, 0, 60); g.addColorStop(0, "rgba(220,250,255,1)"); g.addColorStop(.4, "rgba(80,200,255,.8)"); g.addColorStop(1, "rgba(80,200,255,0)"); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 60, 0, 7); c.fill();
+        c.strokeStyle = "#fff"; c.lineWidth = 3; for (let k = 0; k < 5; k++) { const a = t * 7 + k * 1.26; c.beginPath(); c.moveTo(Math.cos(a) * 18, Math.sin(a) * 18); c.lineTo(Math.cos(a + .3) * 40, Math.sin(a + .3) * 40); c.lineTo(Math.cos(a) * 58, Math.sin(a) * 58); c.stroke(); } }
+      else if (hz.kind === "rock") { c.rotate(hz.spin); c.drawImage(IMG.astC, -48, -44, 96, 88); }
+      else { c.rotate(hz.spin); c.strokeStyle = "#b07a3c"; c.lineWidth = 5; for (let k = 0; k < 7; k++) { c.beginPath(); c.arc(0, 0, 14 + k * 5, k, k + 3.6); c.stroke(); } c.strokeStyle = "#e9c48a"; for (let k = 0; k < 5; k++) { c.beginPath(); c.arc(0, 0, 10 + k * 7, k * 2, k * 2 + 2.4); c.stroke(); } }
+      c.restore(); if (Math.random() < .25) this.part(hz.x - hz.dir * 30, gy - 10, { col: hz.kind === "spark" ? "#BFF4FF" : "rgba(233,196,138,.8)", vx: -hz.dir * 50, vy: -30 - Math.random() * 40, g: 60, life: .6, r: 4 + Math.random() * 5 }); }
+  },
   toggleGrab() {
     if (this.K.scene !== "light" || this.busyNow()) return;
     if (this.grab != null) { this.grab = null; SFX.click(); return; }
@@ -336,8 +361,8 @@ const Eng = {
   },
   moveRobot(dt) {
     const b = this.rb, can = !document.querySelector("#modal:not(.hidden)") && this.phase !== "law" && this.phase !== "done" && this.phase !== "idle";
-    if (this.keys.g) { this.keys.g = 0; if (can) this.toggleGrab(); }
-    let dx = can ? (this.keys.r - this.keys.l) : 0;
+    if (this.keys.g) { this.keys.g = 0; if (can) this.interact(); }
+    let dx = can ? (this.keys.r - this.keys.l) : 0; if (this.stun > 0) { this.stun -= dt; dx = 0; }
     if (this.grab != null) { if (!can || this.K.busy(this.T)) this.grab = null; else { const i = this.grab, s = this.T.sliders[i]; this.gacc += dx * 30 * dt; const st = Math.trunc(this.gacc);
       if (st) { this.gacc -= st; this.T.vals[i] = clamp(this.T.vals[i] + st, s.min, s.max); this.T.mirrors[i].phi = this.T.vals[i]; this.T.beam = null; UI.syncSlider(i); SFX.tick(); } if (dx) this.setRobot("scan", .2); dx = 0; } }
     if (this.charge) dx = 0;
@@ -347,15 +372,22 @@ const Eng = {
     if (this.keys.j) { if (can && !b.air) { b.air = true; b.vy = 1000; b.sq = -.12; SFX.tone(420, .2, "square", .04, 0, 780); } this.keys.j = 0; }
     if (b.air) { b.vy -= 1900 * dt; b.jh += b.vy * dt; if (b.jh <= 0) { b.jh = 0; b.air = false; b.vy = 0; b.sq = .14; SFX.tone(110, .08, "sine", .05); } }
     b.sq += (0 - b.sq) * Math.min(1, dt * 12);
-    if (can) { const gy = this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy; this.collect(b.x, gy - 105 - b.jh, 95); }
+    const gy0 = this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy;
+    if (can) { this.collect(b.x, gy0 - 105 - b.jh, 95);
+      const fr = this.frag; if (fr && !fr.got && Math.hypot(fr.x - b.x, fr.y - (gy0 - 105 - b.jh)) < 90) { fr.got = true; Save.d.frags[fr.key] = 1; Save.save(); SFX.law(); this.boom(fr.x, fr.y, ["#7FE8FF", "#FFFFFF", "#FFC83D", "#B06BFF"], 40, 420); this.say("frag", true);
+        const wi = this.wi, n = fragsOf(wi); UI.toast(n >= 3 ? L(`💎 ${AR(3)}/${AR(3)}! فتحتِ لونًا جديدًا لذرّة: ${SKINS[wi + 1].ar}. غيّريه من «الحساب».`, `💎 3/3! You unlocked a new color for Zarra: ${SKINS[wi + 1].en}. Change it in Profile.`) : L(`💎 شظية ذاكرة ${AR(n)}/${AR(3)} في هذا العالم`, `💎 Memory shard ${n}/3 in this world`)); } }
+    const hz = this.hz; if (hz) { const [a, z] = this.K.hz, sp = hz.kind === "spark" ? 210 : 165; hz.x += hz.dir * sp * dt; hz.spin += hz.dir * dt * 6; if (hz.x < a) { hz.x = a; hz.dir = 1; } if (hz.x > z) { hz.x = z; hz.dir = -1; }
+      if (can && !this.charge && this.stun <= 0 && !this.K.busy(this.T) && Math.abs(hz.x - b.x) < 78 && b.jh < 75) { const away = b.x >= hz.x ? 1 : -1; b.vx = away * 950; b.air = true; b.vy = 560; this.stun = .55; this.shake = 9; this.grab = null;
+        this.setRobot("fail", .7); SFX.bad(); this.say("ouch", true); this.boom(b.x - away * 40, gy0 - 60, hz.kind === "spark" ? ["#7FE8FF", "#fff"] : ["#e9c48a", "#a07a4a"], 14, 260); } }
     if (b.moving && Math.floor(this.t * 5) !== this._st) { this._st = Math.floor(this.t * 5); SFX.tone(140, .05, "square", .012); }
   },
   draw(c) {
-    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H); const w = this.w; if (!w || !this.T) return;
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H); const w = this.w; if (!w || !this.T) { if (typeof Menu !== "undefined") Menu.draw(c, this.t); return; }
     if (this.shake > 0) c.translate((Math.random() - .5) * this.shake, (Math.random() - .5) * this.shake);
     { const off = clamp((this.rb.x - 800) * .05, -40, 40); c.drawImage(IMG["bg" + w.id], -48 - off, -27, W * 1.06, H * 1.06); }
     if (w.gt) for (let x = 0; x < W; x += 600) c.drawImage(IMG[w.gt], x, GY, 600, 220);
     this.K.draw(c, this.T, this.phase);
+    this.drawWorldBits(c);
     this.cells.forEach((p, i) => { if (!p.got) { const bob = Math.sin(this.t * 3 + i) * 6; c.drawImage(IMG.pickup, p.x - 38, p.y - 45 + bob, 76, 90); } });
     this.parts.forEach(p => { c.globalAlpha = Math.max(0, 1 - p.t / p.life); c.fillStyle = p.col; c.beginPath(); c.arc(p.x, p.y, p.r, 0, 7); c.fill(); }); c.globalAlpha = 1;
     this.drawRobot(c); if (this.K.over) this.K.over(c, this.T); this.drawBubble(c);
@@ -372,7 +404,7 @@ const Eng = {
   },
   drawRobot(c) {
     let s = this.robot.s; if (s === "idle" && this.energy <= 3 && this.phase !== "done") s = "low"; if (s === "idle" || s === "low") { if (this.rb.air) s = "jump"; else if (this.rb.moving) s = "roll"; } if (this.phase === "measure" && s === "idle" && this.K.busy(this.T)) s = "scan";
-    if (this.phase === "deduce") s = "think"; const n = ROBOT[s]; const f = (Math.floor(this.t * (s === "roll" ? 10 : 6)) % n) + 1, im = IMG[`r_${s}_${f}`]; if (!im) return;
+    if (this.phase === "deduce") s = "think"; const n = ROBOT[s]; const f = (Math.floor(this.t * (s === "roll" ? 10 : 6)) % n) + 1; let im = IMG[`r_${s}_${f}`]; if (!im) return; im = tinted(im, `${s}${f}`);
     const R = this.K.robot, w = 300, h = w * im.height / im.width; c.save(); c.translate(this.rb.x, (this.w.gt ? Math.min(R.gy, GY) : R.gy) - this.rb.jh); c.scale(this.rb.dir < 0 ? -1 : 1, 1); c.scale(1 - this.rb.sq * .6, 1 + this.rb.sq); c.drawImage(im, -w / 2, -222 * (w / 300), w, h); c.restore();
   }
 };

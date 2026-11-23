@@ -5,7 +5,7 @@ const Story = {
     const loop = now => { if (this.id !== my || !document.body.contains(cv)) return; this.draw(c, i, (now - t0) / 1000); requestAnimationFrame(loop); }; requestAnimationFrame(loop); },
   glow(c, x, y, r, col, a = 1) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, "rgba(0,0,0,0)"); c.save(); c.globalAlpha = a; c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.restore(); },
   stars(c, t, n = 40) { c.save(); for (let k = 0; k < n; k++) { const x = (k * 97.3) % 960, y = (k * 53.7) % 540, tw = .4 + .6 * Math.abs(Math.sin(t * 1.5 + k)); c.globalAlpha = tw; c.fillStyle = "#fff"; c.fillRect(x, y, 2 + (k % 3), 2 + (k % 3)); } c.restore(); },
-  robot(c, st, x, gy, t, w = 230, flip = true) { const n = ROBOT[st], im = IMG[`r_${st}_${(Math.floor(t * 6) % n) + 1}`]; if (!im) return; const h = w * im.height / im.width; c.save(); c.translate(x, gy); if (flip) c.scale(-1, 1); c.drawImage(im, -w / 2, -222 * (w / 300), w, h); c.restore(); },
+  robot(c, st, x, gy, t, w = 230, flip = true) { const n = ROBOT[st], fi = (Math.floor(t * (st === "roll" ? 10 : 6)) % n) + 1; let im = IMG[`r_${st}_${fi}`]; if (!im) return; im = tinted(im, `${st}${fi}`); const h = w * im.height / im.width; c.save(); c.translate(x, gy); if (flip) c.scale(-1, 1); c.drawImage(im, -w / 2, -222 * (w / 300), w, h); c.restore(); },
   draw(c, i, t) {
     c.clearRect(0, 0, 960, 540); const bgn = [3, 1, 4, 4][i]; c.drawImage(IMG["bg" + bgn], 0, 0, 960, 540); c.fillStyle = "rgba(5,8,30,.35)"; c.fillRect(0, 0, 960, 540); this.stars(c, t);
     const lt = t % 7;
@@ -38,6 +38,27 @@ const Story = {
     }
   }
 };
+/* ---------- مشهد متحرك خلف القوائم ---------- */
+const Menu = {
+  draw(c, t) {
+    if (!IMG.bg3) { c.fillStyle = "#0d1330"; c.fillRect(0, 0, 1600, 900); return; }
+    c.drawImage(IMG.bg3, -60 + Math.sin(t * .1) * 50, -40 + Math.cos(t * .13) * 25, 1720, 980);
+    c.fillStyle = "rgba(10,12,40,.35)"; c.fillRect(0, 0, 1600, 900);
+    for (let k = 0; k < 70; k++) { const x = (k * 233.7) % 1600, y = (k * 127.3) % 760; c.globalAlpha = .25 + .75 * Math.abs(Math.sin(t * (0.6 + k % 5 * .3) + k)); c.fillStyle = "#fff"; c.fillRect(x, y, 2 + k % 3, 2 + k % 3); } c.globalAlpha = 1;
+    const sh = (t % 7) / 1.2; if (sh < 1) { const x = 1500 - sh * 900, y = 60 + sh * 260; c.save(); const g = c.createLinearGradient(x, y, x + 180, y - 52); g.addColorStop(0, "rgba(255,255,255,.95)"); g.addColorStop(1, "rgba(255,255,255,0)"); c.strokeStyle = g; c.lineWidth = 4; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 180, y - 52); c.stroke(); c.restore(); }
+    Story.glow(c, 800, 330, 330 + Math.sin(t * 1.6) * 25, "rgba(123,77,255,.45)");
+    c.save(); c.translate(1340, 210 + Math.sin(t * .7) * 14); c.rotate(t * .05); c.drawImage(IMG.planetU, -150, -150, 300, 300); c.restore();
+    c.save(); c.translate(230, 170 + Math.cos(t * .8) * 12); c.rotate(-t * .08); c.drawImage(IMG.planetK, -85, -85, 170, 170); c.restore();
+    const oa = t * .6; c.save(); c.translate(230 + Math.cos(oa) * 150, 170 + Math.sin(oa) * 50); c.drawImage(IMG.ring, -26, -26, 52, 52); c.restore();
+    [["astA", 120, 12, 0], ["astB", 80, 20, 380], ["astC", 60, 30, 760]].forEach(([k, s, sp, o], j) => { const x = 1700 - ((t * sp + o * 2.3) % 1900), y = 330 + j * 120 + Math.sin(t * .8 + j) * 30; c.save(); c.translate(x, y); c.rotate(t * (.3 + j * .2)); c.globalAlpha = .9; c.drawImage(IMG[k], -s / 2, -s / 2, s, s * .9); c.restore(); });
+    const pf = (t % 9) / 4; if (pf < 1) { const pts = []; for (let k = 0; k <= 40; k++) { const u = k / 40 * pf; pts.push([-100 + u * 1800, 640 - Math.sin(u * Math.PI) * 420]); } c.save(); c.setLineDash([2, 14]); c.lineCap = "round"; c.strokeStyle = "rgba(255,224,138,.7)"; c.lineWidth = 5; c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke(); c.restore();
+      const p = pts[40], q = pts[38]; c.save(); c.translate(p[0], p[1]); c.rotate(Math.atan2(p[1] - q[1], p[0] - q[0])); c.drawImage(IMG.probe, -50, -42, 100, 84); c.restore(); }
+    for (let x = -((t * 40) % 600); x < 1600; x += 600) c.drawImage(IMG.gt4, x, 845, 600, 200);
+    [260, 640, 1060, 1420].forEach((x, i) => { const bx = (x - t * 40) % 1600 + (x - t * 40 < 0 ? 1600 : 0); c.drawImage(IMG.pickup, bx - 22, 790 + Math.sin(t * 3 + i) * 5, 44, 52); });
+    const cyc = (t % 16) / 16, dir = cyc < .5 ? 1 : -1, ph = cyc < .5 ? cyc * 2 : (1 - cyc) * 2, rx = 160 + ease(ph) * 1280, jump = Math.max(0, Math.sin(t * 2.2)) > .97 ? 0 : Math.max(0, Math.sin((t % 3.2) / 3.2 * Math.PI * 6)) * (((t / 3.2) | 0) % 2 ? 90 : 0);
+    Story.robot(c, jump > 5 ? "jump" : "roll", rx, 858 - jump, t, 170, dir < 0);
+  }
+};
 const AVATARS = ["happy", "thinking", "scanning", "law_force", "law_light", "law_gravity"];
 const UI = {
   scale: 1, scr: null, unlockAll: /[?&]unlock=1/.test(location.search),
@@ -64,7 +85,8 @@ const UI = {
   applyLang() { const h = document.documentElement; h.lang = LANG; h.dir = LANG === "en" ? "ltr" : "rtl"; document.title = L("ذاكرة الكون", "Memory of the Universe"); const bt = $("#bTest"); if (bt) { bt.textContent = L("جرّبي", "Try"); $("#bDeduce").textContent = L("ثبّتي الاستنتاج", "Lock deduction"); $("#bAct").textContent = L("نفّذي", "Go"); } },
   profile(done) {
     this.show("profile"); this.applyLang(); const P = Save.d.profile || { name: "", av: 0 }; let av = P.av;
-    $("#profile").innerHTML = `<h2>${L("حسابي", "My profile")}</h2><label>${L("اسمك", "Your name")}</label><input type="text" id="pName" maxlength="14" value="${P.name.replace(/[<>&"]/g, "")}" placeholder="${L("اكتبي اسمك", "Type your name")}"><label>${L("اختاري صورتك", "Choose your avatar")}</label><div class="avs">${AVATARS.map((a, i) => `<button class="av ${i === av ? "on" : ""}" data-i="${i}"><img src="assets/ui/${a}.png" alt=""></button>`).join("")}</div><label>${L("اللغة", "Language")}</label><div class="langs"><button class="btn ${LANG === "ar" ? "on" : ""}" id="lAr">العربية</button><button class="btn ${LANG === "en" ? "on" : ""}" id="lEn">English</button></div><div class="row" style="margin-top:22px"><button class="btn pri" id="pOk">${L("حفظ", "Save")}</button>${Save.d.profile ? `<button class="btn danger" id="pDel">🗑 ${L("حذف الحساب", "Delete account")}</button>` : ""}</div>`;
+    $("#profile").innerHTML = `<h2>${L("حسابي", "My profile")}</h2><label>${L("اسمك", "Your name")}</label><input type="text" id="pName" maxlength="14" value="${P.name.replace(/[<>&"]/g, "")}" placeholder="${L("اكتبي اسمك", "Type your name")}"><label>${L("اختاري صورتك", "Choose your avatar")}</label><div class="avs">${AVATARS.map((a, i) => `<button class="av ${i === av ? "on" : ""}" data-i="${i}"><img src="assets/ui/${a}.png" alt=""></button>`).join("")}</div><label>${L("لون ذرّة", "Zarra's color")} <small style="opacity:.7">${L("(اجمعي ٣ شظايا 💎 في عالم لتفتحي لونه)", "(collect 3 shards 💎 in a world to unlock its color)")}</small></label><div class="skins">${SKINS.map((k, i) => `<button class="sk ${i === (Save.d.skin || 0) ? "on" : ""} ${skinOpen(i) ? "" : "lockb"}" data-k="${i}" style="--c:${k.col || "#e8ecff"}"><span></span>${skinOpen(i) ? (LANG === "en" ? k.en : k.ar) : "🔒 " + (i ? AR(fragsOf(k.w)) + "/" + AR(3) : "")}</button>`).join("")}</div><label>${L("اللغة", "Language")}</label><div class="langs"><button class="btn ${LANG === "ar" ? "on" : ""}" id="lAr">العربية</button><button class="btn ${LANG === "en" ? "on" : ""}" id="lEn">English</button></div><div class="row" style="margin-top:22px"><button class="btn pri" id="pOk">${L("حفظ", "Save")}</button>${Save.d.profile ? `<button class="btn danger" id="pDel">🗑 ${L("حذف الحساب", "Delete account")}</button>` : ""}</div>`;
+    $$(".sk").forEach(b => b.onclick = () => { const k = +b.dataset.k; if (!skinOpen(k)) { this.toast(L("اجمعي شظايا الذاكرة الثلاث 💎 في هذا العالم أولًا (واحدة في كل مرحلة، تحتاج قفزة!).", "Collect this world's three memory shards 💎 first (one per stage, you'll need to jump!).")); return; } Save.d.skin = k; Save.save(); $$(".sk").forEach(x => x.classList.toggle("on", x === b)); SFX.click(); });
     $$(".av").forEach(b => b.onclick = () => { av = +b.dataset.i; $$(".av").forEach(x => x.classList.toggle("on", x === b)); SFX.click(); });
     const setLang = l => { const nm = $("#pName").value, cur = $$(".av.on")[0], sel = cur ? +cur.dataset.i : av; LANG = l; Save.d.lang = l; Save.save(); this.profile(done); $("#pName").value = nm; $$(".av").forEach(x => x.classList.toggle("on", +x.dataset.i === sel)); };
     $("#lAr").onclick = () => setLang("ar"); $("#lEn").onclick = () => setLang("en");
@@ -77,7 +99,7 @@ const UI = {
   worlds() {
     this.show("worlds");
     $("#worlds").innerHTML = `<h2>${L("اختاري عالمًا", "Choose a world")}</h2><div class="cards">${WORLDS.map((w, i) => { const ul = this.unlockedWorld(i), st = this.worldStars(w);
-      return `<div class="card ${ul ? "" : "lock"}" data-i="${i}" style="background-image:url(assets/img/${w.bg}.png)"><div class="sh"></div>${ul ? "" : `<img class="lk" src="assets/ui/lock.png" alt="">`}<div class="in"><img src="assets/ui/${w.law === "memory" ? "law_memory" : LAWS[w.law].icon}.png" alt=""><h3>${AR(w.id)}. ${wt(w, "name")}</h3><small>${wt(w, "sub")}</small><div class="st">★ ${AR(st)} / ${AR(9)}</div></div></div>`; }).join("")}</div><div class="row" style="margin-top:34px"><button class="btn" id="wBack">${L("القائمة", "Menu")}</button></div>`;
+      return `<div class="card ${ul ? "" : "lock"}" data-i="${i}" style="background-image:url(assets/img/${w.bg}.png)"><div class="sh"></div>${ul ? "" : `<img class="lk" src="assets/ui/lock.png" alt="">`}<div class="in"><img src="assets/ui/${w.law === "memory" ? "law_memory" : LAWS[w.law].icon}.png" alt=""><h3>${AR(w.id)}. ${wt(w, "name")}</h3><small>${wt(w, "sub")}</small><div class="st">★ ${AR(st)} / ${AR(9)} &nbsp; 💎 ${AR(fragsOf(i))}/${AR(3)}</div></div></div>`; }).join("")}</div><div class="row" style="margin-top:34px"><button class="btn" id="wBack">${L("القائمة", "Menu")}</button></div>`;
     $$(".card").forEach(c => c.onclick = () => { const i = +c.dataset.i; if (!this.unlockedWorld(i)) { this.toast(L("أنهي مراحل العالم السابق أولًا.", "Finish the previous world first.")); return; } SFX.click(); this.stages(i); });
     $("#wBack").onclick = () => this.menu();
   },
@@ -160,7 +182,7 @@ const UI = {
   },
   wrongAnswer(msg) { this.modal(`<h3>${L("ليس بعد…", "Not yet…")}</h3><div class="bad">${msg}</div><p>${L("خسرتِ ٢ من الطاقة. أعيدي النظر في القياسات.", "You lost 2 energy. Take another look at the readings.")}</p><div class="row"><button class="btn pri" id="wx">${L("حاولي مجددًا", "Try again")}</button></div>`); $("#wx").onclick = () => { this.closeModal(); if (Eng.phase !== "done") { Eng.setRobot("idle", .1); Eng.deduce(); } }; if (Eng.phase === "done") $("#modal").classList.add("hidden"); },
   lawReveal(kind, fresh) { this.toast(L("✦ اكتشفتِ: ", "✦ You discovered: ") + lw(kind, "short") + (fresh ? L(" · 📖 بطاقة جديدة في كتاب الذاكرة!", " · 📖 New card in the Memory Book!") : "")); },
-  hintModal(t, free) { this.modal(`<h3>${L("تلميح", "Hint")}</h3><p>${t}</p><p style="font-size:22px;opacity:.7">${free ? L("هذا التلميح مجاني.", "This hint is free.") : L("كلّف التلميح وحدة طاقة.", "The hint cost 1 energy.")}</p><div class="row"><button class="btn pri" id="hx">${L("فهمت", "Got it")}</button></div>`); $("#hx").onclick = () => this.closeModal(); },
+  hintModal(t, free, arch) { this.modal(`<h3>${arch ? "🖥️ " + L("أرشيف الذاكرة", "Memory Archive") : L("تلميح", "Hint")}</h3><p>${t}</p><p style="font-size:22px;opacity:.7">${free ? L("هذا التلميح مجاني.", "This hint is free.") : L("كلّف التلميح وحدة طاقة.", "The hint cost 1 energy.")}</p><div class="row"><button class="btn pri" id="hx">${L("فهمت", "Got it")}</button></div>`); $("#hx").onclick = () => this.closeModal(); },
   pause() { if (Eng.phase === "idle") return; this.modal(`<h3>${L("إيقاف مؤقت", "Paused")}</h3><div class="row"><button class="btn pri" id="p1">${L("متابعة", "Resume")}</button><button class="btn" id="p2">${L("إعادة المرحلة", "Restart stage")}</button><button class="btn" id="p3">${L("المراحل", "Stages")}</button><button class="btn" id="p4">${SFX.on ? "🔊" : "🔇"} ${L("الصوت", "Sound")}</button></div>`);
     $("#p1").onclick = () => this.closeModal(); $("#p2").onclick = () => { this.closeModal(); Eng.start(Eng.wi, Eng.si, { code: Eng.code, lab: Eng.sandbox }); }; $("#p3").onclick = () => { this.closeModal(); this.stages(Eng.wi); };
     $("#p4").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); this.pause(); }; },

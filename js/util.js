@@ -86,10 +86,23 @@ const SFX = {
 const SAVE_KEY = "dhakirat_alkawn_v1";
 const Save = {
   d: { stars: {}, sound: true, story: false, losses: {}, profile: null, lang: "ar", laws: {} },
-  load() { try { Object.assign(this.d, JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")); } catch (e) { } this.d.laws = this.d.laws || {}; SFX.on = this.d.sound !== false; LANG = this.d.lang === "en" ? "en" : "ar"; },
+  load() { try { Object.assign(this.d, JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")); } catch (e) { } this.d.laws = this.d.laws || {}; this.d.frags = this.d.frags || {}; this.d.skin = this.d.skin || 0; SFX.on = this.d.sound !== false; LANG = this.d.lang === "en" ? "en" : "ar"; },
   save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.d)); } catch (e) { } },
   stars(id) { return this.d.stars[id] || 0; },
   set(id, n) { if (n > this.stars(id)) this.d.stars[id] = n; this.save(); },
-  wipe() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } this.d = { stars: {}, sound: true, story: false, losses: {}, profile: null, lang: "ar", laws: {} }; LANG = "ar"; SFX.on = true; },
-  reset() { this.d = { stars: {}, sound: this.d.sound, story: false, losses: {}, profile: this.d.profile, lang: this.d.lang, laws: {} }; this.save(); }
+  wipe() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } this.d = { stars: {}, sound: true, story: false, losses: {}, profile: null, lang: "ar", laws: {}, frags: {}, skin: 0 }; LANG = "ar"; SFX.on = true; },
+  reset() { this.d = { stars: {}, sound: this.d.sound, story: false, losses: {}, profile: this.d.profile, lang: this.d.lang, laws: {}, frags: {}, skin: 0 }; this.save(); }
 };
+
+/* ---------- ألوان ذرّة (تُفتح بجمع شظايا الذاكرة) ---------- */
+const SKINS = [{ col: null, ar: "الأصلي", en: "Classic" }, { col: "#FFB020", w: 0, ar: "ذهبي", en: "Gold" }, { col: "#28D8FF", w: 1, ar: "سماوي", en: "Sky" }, { col: "#B06BFF", w: 2, ar: "بنفسجي", en: "Violet" }, { col: "#FF4F8B", w: 3, ar: "وردي", en: "Pink" }];
+const fragsOf = wi => [0, 1, 2].filter(i => Save.d.frags[`${wi}-${i}`]).length;
+const skinOpen = k => k === 0 || fragsOf(SKINS[k].w) >= 3;
+const _tint = {};
+function tinted(im, key) {
+  const sk = SKINS[Save.d.skin || 0]; if (!sk || !sk.col || !skinOpen(Save.d.skin)) return im;
+  const k = key + sk.col; if (_tint[k]) return _tint[k];
+  const cv = document.createElement("canvas"); cv.width = im.width; cv.height = im.height; const c = cv.getContext("2d");
+  c.drawImage(im, 0, 0); c.globalCompositeOperation = "source-atop"; c.globalAlpha = .42; c.fillStyle = sk.col; c.fillRect(0, 0, cv.width, cv.height);
+  return (_tint[k] = cv);
+}

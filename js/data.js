@@ -57,7 +57,10 @@ const SAY = {
   low: [["بطاريتي تصفّر… أبغى شحن!", "My battery's beeping… I need a charge!"]],
   collect: [["يمّي! طاقة طازجة ⚡", "Yum! Fresh energy ⚡"], ["+٣… أحس إني أقدر أطير!", "+3… I feel like I could fly!"]],
   idle: [["أنا هنا… أنتظر عبقريتك.", "Still here… waiting for your genius."], ["لو تعبتِ، زر المصباح فيه تلميح 💡", "Stuck? The bulb button has a hint 💡"], ["أفكر في الفيزياء… وفي البطاريات.", "Thinking about physics… and batteries."]],
-  grab: [["أمسكتها! دوّريها بـ ← →", "Got it! Rotate with ← →"]]
+  grab: [["أمسكتها! دوّريها بـ ← →", "Got it! Rotate with ← →"]],
+  ouch: [["آي! هذا الشي يدفّ!", "Ouch! That thing pushes!"], ["اقفزي فوقه المرة الجاية ↑", "Jump over it next time ↑"], ["دوّخني… 😵", "I'm dizzy… 😵"]],
+  frag: [["شظية ذاكرة! 💎 الكون يتذكّر أكثر.", "A memory shard! 💎 The universe remembers more."], ["وصلناها! القفزة كانت تستاهل.", "Got it! That jump was worth it."]],
+  archive: [["الأرشيف يعرف أسرار هذا العالم 🖥️", "The archive knows this world's secrets 🖥️"], ["تلميح مجاني! المشي له فوائد.", "A free hint! Walking pays off."]]
 };
 
 /* ===== كتاب ذاكرة الكون ===== */
