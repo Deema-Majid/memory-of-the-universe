@@ -76,7 +76,7 @@ const UI = {
       $("#nN").onclick = () => this.closeModal(); $("#nY").onclick = () => { Save.reset(); this.closeModal(); this.toast(L("بدأت لعبة جديدة!", "New game started!")); this.menu(); }; };
     $("#mBook").onclick = () => { SFX.click(); this.book(); };
     $("#mTeam").onclick = () => { SFX.click(); if (!Save.d.profile) this.profile(() => this.team()); else this.team(); };
-    $("#mAcc").onclick = () => { SFX.click(); this.profile(() => this.menu()); }; if ($("#mMe")) { $("#mMe").onclick = () => $("#mAcc").click(); const mc = $("#meCv"), g = mc.getContext("2d"), my = ++this._bic, lp = () => { if (this._bic !== my || !document.body.contains(mc)) return; g.clearRect(0, 0, 120, 120); Robo.draw(g, myLook(), "idle", Robo.frame("idle", performance.now() / 1000), 66, 112, 150, true, 0, performance.now() / 1000); requestAnimationFrame(lp); }; lp(); }
+    $("#mAcc").onclick = () => { SFX.click(); this.profile(() => this.menu()); }; if ($("#mMe")) { $("#mMe").onclick = () => $("#mAcc").click(); const mc = $("#meCv"), g = mc.getContext("2d"), my = ++this._bic, lp = () => { if (this._bic !== my || !document.body.contains(mc)) return; g.clearRect(0, 0, 120, 120); Robo.draw(g, myLook(), "idle", Robo.frame("idle", performance.now() / 1000), Robo.cx(60, 150), 112, 150, true, 0, performance.now() / 1000); requestAnimationFrame(lp); }; lp(); }
     $("#mStory").onclick = () => { SFX.click(); this.story(() => this.menu()); };
     $("#mSound").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); SFX.click(); this.menu(); };
   },
@@ -100,7 +100,7 @@ const UI = {
     </div></div><div class="row" style="margin-top:14px"><button class="btn pri" id="pOk">${L("حفظ", "Save")}</button>${Save.d.profile ? `<button class="btn danger" id="pDel">🗑 ${L("حذف الحساب", "Delete account")}</button>` : ""}</div>`;
     const pv = $("#pv"), g = pv.getContext("2d"), my = ++this._bic, sts = ["idle", "idle", "jump", "roll", "success"];
     const lp = () => { if (this._bic !== my || !document.body.contains(pv)) return; const t = performance.now() / 1000, st = sts[Math.floor(t / 2.2) % sts.length]; g.clearRect(0, 0, 340, 360); const gr = g.createRadialGradient(170, 210, 20, 170, 210, 170); gr.addColorStop(0, "#3a2f9a"); gr.addColorStop(1, "rgba(23,28,79,0)"); g.fillStyle = gr; g.fillRect(0, 0, 340, 360);
-      Robo.draw(g, Object.assign({}, lk, { acc: accOpen(lk.acc) ? lk.acc : 0 }), st, Robo.frame(st, t), 196, 330 - (st === "jump" ? Math.abs(Math.sin(t * 3)) * 30 : 0), 330, true, 0, t); requestAnimationFrame(lp); }; lp();
+      Robo.draw(g, Object.assign({}, lk, { acc: accOpen(lk.acc) ? lk.acc : 0 }), st, Robo.frame(st, t), Robo.cx(170, 330), 330 - (st === "jump" ? Math.abs(Math.sin(t * 3)) * 30 : 0), 330, true, 0, t); requestAnimationFrame(lp); }; lp();
     $$(".cs.b").forEach(b => b.onclick = () => { lk.body = +b.dataset.i; $$(".cs.b").forEach(x => x.classList.toggle("on", x === b)); SFX.click(); });
     $$(".cs.a").forEach(b => b.onclick = () => { lk.accCol = +b.dataset.i; $$(".cs.a").forEach(x => x.classList.toggle("on", x === b)); SFX.click(); });
     $$(".ac").forEach(b => b.onclick = () => { const k = +b.dataset.i; if (!accOpen(k)) { this.toast(L(`اجمعي شظايا الذاكرة الثلاث 💎 في عالم ${wt(WORLDS[ACCS[k].w], "name")} لتفتحي ${ACCS[k].ar}.`, `Collect the 3 memory shards 💎 in ${wt(WORLDS[ACCS[k].w], "name")} to unlock the ${ACCS[k].en}.`)); return; } lk.acc = k; $$(".ac").forEach(x => x.classList.toggle("on", x === b)); SFX.click(); });
@@ -140,7 +140,7 @@ const UI = {
       : `<p class="twait">⏳ ${L("بانتظار المضيفة لتبدأ…", "Waiting for the host to start…")} <b>${stName(sel.wi, sel.si)}</b></p><div class="row"><button class="btn" id="tLeave">${L("خروج من الغرفة", "Leave room")}</button></div>`}
       <div class="tstatus" id="tStatus"></div>`;
     const my = ++this._bic, cvs = $$(".slotcv"), lp = () => { if (this._bic !== my || !cvs.length || !document.body.contains(cvs[0])) return; const t = performance.now() / 1000;
-      cvs.forEach(cv => { const g = cv.getContext("2d"), p = L3[+cv.dataset.i]; if (!p) return; g.clearRect(0, 0, 220, 220); const st = ["idle", "idle", "success", "idle"][Math.floor(t / 1.8 + +cv.dataset.i) % 4]; Robo.draw(g, p.look || { body: 0, acc: 0, accCol: 8 }, st, Robo.frame(st, t + +cv.dataset.i), 132, 212, 330, true, 0, t); }); requestAnimationFrame(lp); }; lp();
+      cvs.forEach(cv => { const g = cv.getContext("2d"), p = L3[+cv.dataset.i]; if (!p) return; g.clearRect(0, 0, 220, 220); const st = ["idle", "idle", "success", "idle"][Math.floor(t / 1.8 + +cv.dataset.i) % 4]; Robo.draw(g, p.look || { body: 0, acc: 0, accCol: 8 }, st, Robo.frame(st, t + +cv.dataset.i), Robo.cx(110, 255), 212, 255, true, 0, t); }); requestAnimationFrame(lp); }; lp();
     if (host) {
       $("#tCopy").onclick = () => { try { navigator.clipboard.writeText(Net.room); this.toast(L("نُسخ الكود ✔", "Code copied ✔")); } catch (e) { } };
       $$(".chipb.w").forEach(b => b.onclick = () => { Net.sel = { wi: +b.dataset.w, si: 0 }; SFX.click(); Net.pushLobby(); });

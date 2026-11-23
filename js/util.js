@@ -146,5 +146,7 @@ const Robo = {
     if (id === "halo") { c.shadowColor = "#FFE14D"; c.shadowBlur = 18; c.strokeStyle = "#FFE98A"; c.lineWidth = s * .08; c.beginPath(); c.ellipse(x, y - s * .28 + Math.sin(t * 3) * 4, s * .42, s * .12, 0, 0, 7); c.stroke(); }
     c.restore();
   },
+  /* إزاحة تجعل جسم الروبوت (لا الصورة كلها) في المنتصف */
+  cx(x, w, left = true) { const hx = 259 * (w / 680) - w / 2; return left ? x + hx : x - hx; },
   frame(st, t) { const n = ROBOT[st] || 1; return (Math.floor(t * (st === "roll" ? 10 : 6)) % n) + 1; }
 };
