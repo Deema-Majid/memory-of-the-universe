@@ -90,5 +90,6 @@ const Save = {
   save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.d)); } catch (e) { } },
   stars(id) { return this.d.stars[id] || 0; },
   set(id, n) { if (n > this.stars(id)) this.d.stars[id] = n; this.save(); },
+  wipe() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } this.d = { stars: {}, sound: true, story: false, losses: {}, profile: null, lang: "ar", laws: {} }; LANG = "ar"; SFX.on = true; },
   reset() { this.d = { stars: {}, sound: this.d.sound, story: false, losses: {}, profile: this.d.profile, lang: this.d.lang, laws: {} }; this.save(); }
 };

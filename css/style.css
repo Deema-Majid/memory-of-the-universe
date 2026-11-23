@@ -128,3 +128,4 @@ input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;bac
 .chal small{font-size:20px;opacity:.8}
 #menu .row{flex-wrap:wrap;justify-content:center;max-width:1400px}
 #book h2{font-size:46px;margin-bottom:22px}
+.btn.danger{border-color:#ff8a8a;color:#ffb0b0;background:#4a1a2a}
