@@ -65,16 +65,17 @@ const AVATARS = ["happy", "thinking", "scanning", "law_force", "law_light", "law
 const UI = {
   _bic: 0,
   scale: 1, scr: null, unlockAll: /[?&]unlock=1/.test(location.search),
-  show(id) { $("#toast").classList.remove("on"); ["menu", "worlds", "stages", "profile", "book"].forEach(s => $("#" + s).classList.toggle("hidden", s !== id)); $("#hud").classList.add("hidden"); this.scr = id; Eng.phase = "idle"; Eng.T = null; if (!id) return; },
+  show(id) { $("#toast").classList.remove("on"); ["menu", "worlds", "stages", "profile", "book", "team"].forEach(s => $("#" + s).classList.toggle("hidden", s !== id)); $("#hud").classList.add("hidden"); this.scr = id; Eng.phase = "idle"; Eng.T = null; if (!id) return; },
   fit() { const s = Math.min(innerWidth / 1600, innerHeight / 900); this.scale = s; $("#stage").style.transform = `scale(${s})`; },
   /* ---------- القوائم ---------- */
   menu() {
     this.show("menu"); SFX.music("menu"); const any = Object.keys(Save.d.stars).length;
-    const P = Save.d.profile; $("#menu").innerHTML = `${P ? `<div class="me" id="mMe"><canvas id="meCv" width="120" height="120"></canvas><span>${L("أهلًا", "Hi")} ${P.name.replace(/[<>&"]/g, "")}</span></div>` : ""}<img class="logo" src="assets/logo/logo_stacked_dark.png" alt="ذاكرة الكون"><div class="row"><button class="btn pri" id="mPlay">${any ? L("تابعي اللعب", "Continue") : L("ابدئي", "Play")}</button><button class="btn" id="mStory">${L("القصة", "Story")}</button><button class="btn" id="mSound">${SFX.on ? "🔊" : "🔇"} ${L("الصوت", "Sound")}</button>${any ? `<button class="btn" id="mNew">${L("لعبة جديدة", "New game")}</button>` : ""}<button class="btn" id="mBook">📖 ${L("كتاب الذاكرة", "Memory Book")}</button><button class="btn" id="mAcc">${L("الحساب", "Profile")}</button></div><p>${L("لعبة فيزياء ثنائية الأبعاد: قيسي · استنتجي · تصرّفي", "A 2D physics game: Measure · Deduce · Act")}</p>`;
+    const P = Save.d.profile; $("#menu").innerHTML = `${P ? `<div class="me" id="mMe"><canvas id="meCv" width="120" height="120"></canvas><span>${L("أهلًا", "Hi")} ${P.name.replace(/[<>&"]/g, "")}</span></div>` : ""}<img class="logo" src="assets/logo/logo_stacked_dark.png" alt="ذاكرة الكون"><div class="row"><button class="btn pri" id="mPlay">${any ? L("تابعي اللعب", "Continue") : L("ابدئي", "Play")}</button><button class="btn" id="mStory">${L("القصة", "Story")}</button><button class="btn" id="mSound">${SFX.on ? "🔊" : "🔇"} ${L("الصوت", "Sound")}</button>${any ? `<button class="btn" id="mNew">${L("لعبة جديدة", "New game")}</button>` : ""}<button class="btn team" id="mTeam">👥 ${L("العب مع صديقاتك", "Play with friends")} <i>${L("تجريبي", "beta")}</i></button><button class="btn" id="mBook">📖 ${L("كتاب الذاكرة", "Memory Book")}</button><button class="btn" id="mAcc">${L("الحساب", "Profile")}</button></div><p>${L("لعبة فيزياء ثنائية الأبعاد: قيسي · استنتجي · تصرّفي", "A 2D physics game: Measure · Deduce · Act")}</p>`;
     $("#mPlay").onclick = () => { SFX.click(); const go = () => { if (!Save.d.story) this.story(() => this.worlds()); else this.worlds(); }; if (!Save.d.profile) this.profile(go); else go(); };
     if ($("#mNew")) $("#mNew").onclick = () => { SFX.click(); this.modal(`<h3>${L("لعبة جديدة؟", "Start a new game?")}</h3><p>${L("سيُمسح تقدمك ونجومك وتبدأين من العالم الأول. اسمك وصورتك ولغتك تبقى كما هي.", "Your progress and stars will be erased and you start from world 1. Your name, avatar and language stay.")}</p><div class="row"><button class="btn pri" id="nY">${L("نعم، ابدئي من جديد", "Yes, start over")}</button><button class="btn" id="nN">${L("إلغاء", "Cancel")}</button></div>`);
       $("#nN").onclick = () => this.closeModal(); $("#nY").onclick = () => { Save.reset(); this.closeModal(); this.toast(L("بدأت لعبة جديدة!", "New game started!")); this.menu(); }; };
     $("#mBook").onclick = () => { SFX.click(); this.book(); };
+    $("#mTeam").onclick = () => { SFX.click(); if (!Save.d.profile) this.profile(() => this.team()); else this.team(); };
     $("#mAcc").onclick = () => { SFX.click(); this.profile(() => this.menu()); }; if ($("#mMe")) { $("#mMe").onclick = () => $("#mAcc").click(); const mc = $("#meCv"), g = mc.getContext("2d"), my = ++this._bic, lp = () => { if (this._bic !== my || !document.body.contains(mc)) return; g.clearRect(0, 0, 120, 120); Robo.draw(g, myLook(), "idle", Robo.frame("idle", performance.now() / 1000), 66, 112, 150, true, 0, performance.now() / 1000); requestAnimationFrame(lp); }; lp(); }
     $("#mStory").onclick = () => { SFX.click(); this.story(() => this.menu()); };
     $("#mSound").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); SFX.click(); this.menu(); };
@@ -108,6 +109,53 @@ const UI = {
     if ($("#pDel")) $("#pDel").onclick = () => { SFX.click(); this.modal(`<h3>${L("حذف الحساب نهائيًا؟", "Delete your account for good?")}</h3><p>${L("سيُحذف كل شيء: اسمك وشكل ذرّة ونجومك وتقدمك وبطاقات كتاب الذاكرة. لا يمكن التراجع.", "Everything will be erased: your name, Zarra's look, stars, progress and Memory Book cards. This can't be undone.")}</p><div class="row"><button class="btn danger" id="dY">${L("نعم، احذفي كل شيء", "Yes, delete everything")}</button><button class="btn" id="dN">${L("إلغاء", "Cancel")}</button></div>`);
       $("#dN").onclick = () => this.closeModal(); $("#dY").onclick = () => { Save.wipe(); this.closeModal(); this.applyLang(); SFX.music("menu"); this.menu(); this.toast(L("حُذف الحساب. ابدئي من جديد!", "Account deleted. Start fresh!")); }; };
     $("#pOk").onclick = () => { const n = $("#pName").value.trim(); if (!n) { this.toast(L("اكتبي اسمك أولًا.", "Please type your name first.")); $("#pName").focus(); return; } Save.d.profile = { name: n.slice(0, 14), av: 0 }; Save.d.look = lk; Save.save(); SFX.click(); done(); };
+  },
+  /* ---------- اللعب الجماعي ---------- */
+  team() {
+    this.show("team"); SFX.music("menu");
+    $("#team").innerHTML = `<h2>👥 ${L("العب مع صديقاتك", "Play with friends")} <span class="beta">${L("تجريبي", "beta")}</span></h2>
+      <p class="tsub">${L("حتى ٣ لاعبات، كل وحدة من جهازها، في خريطة أوسع. تعاونّ: تقسّمن المهام وتتفادين الوحش معًا!", "Up to 3 players, each on her own device, in a wider map. Team up: split the tasks and dodge the monster together!")}</p>
+      <div class="tcards"><div class="tcard"><div class="ti">🏠</div><h3>${L("أنشئي غرفة", "Create a room")}</h3><p>${L("تحصلين على كود ترسلينه لصديقاتك.", "You get a code to send to your friends.")}</p><button class="btn pri" id="tCreate">${L("أنشئي الغرفة", "Create room")}</button></div>
+      <div class="tcard"><div class="ti">🔑</div><h3>${L("انضمي بكود", "Join with a code")}</h3><input type="text" id="tCode" maxlength="5" placeholder="K7Q2M" autocomplete="off"><button class="btn pri" id="tJoin">${L("انضمي", "Join")}</button></div></div>
+      <div class="tstatus" id="tStatus"></div><p class="tnote">${L("يحتاج إنترنت. التقدم والنجوم في هذا الوضع لا تُحفظ في حسابك.", "Needs internet. Progress and stars in this mode aren't saved to your account.")}</p>
+      <div class="row"><button class="btn" id="tBack">${L("القائمة", "Menu")}</button></div>`;
+    $("#tCreate").onclick = () => { SFX.click(); Net.create(); };
+    $("#tJoin").onclick = () => { SFX.click(); Net.join($("#tCode").value); };
+    $("#tCode").addEventListener("keydown", e => { if (e.key === "Enter") $("#tJoin").click(); e.stopPropagation(); });
+    $("#tCode").addEventListener("input", e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); });
+    $("#tBack").onclick = () => { Net.reset(); this.menu(); };
+  },
+  teamStatus(msg, bad) { const e = $("#tStatus"); if (!e) { this.toast(msg); return; } e.textContent = msg; e.className = "tstatus " + (bad ? "bad" : "ok"); },
+  teamLobby() {
+    this.show("team"); Eng.team = false; const host = Net.host, L3 = Net.lobby, sel = Net.sel || { wi: 0, si: 0 };
+    const slots = [0, 1, 2].map(i => { const p = L3[i]; return p ? `<div class="slot ${i === (host ? 0 : Net.you) ? "mine" : ""}"><canvas class="slotcv" data-i="${i}" width="220" height="220"></canvas><b>${String(p.name).replace(/[<>&"]/g, "")}</b><span>${i === 0 ? "👑 " + L("المضيفة", "Host") : ""}${i === (host ? 0 : Net.you) ? (i === 0 ? " · " : "") + L("أنتِ", "You") : ""}</span></div>`
+      : `<div class="slot empty"><div class="q">+</div><b>${L("بانتظار لاعبة…", "Waiting for a player…")}</b><span>${L("أرسلي لها الكود", "Send her the code")}</span></div>`; }).join("");
+    const stName = (wi, si) => `${wt(WORLDS[wi], "name")} · ${WORLDS[wi].stages[si].boss ? L("الوحش", "Boss") : L("مرحلة", "Stage") + " " + AR(si + 1)}`;
+    $("#team").innerHTML = `<h2>👥 ${L("غرفة الفريق", "Team room")} <span class="beta">${L("تجريبي", "beta")}</span></h2>
+      <div class="roomcode"><small>${L("كود الغرفة", "Room code")}</small><b>${Net.room}</b>${host ? `<button class="btn small" id="tCopy">📋 ${L("نسخ", "Copy")}</button>` : ""}</div>
+      <div class="slots">${slots}</div>
+      ${host ? `<div class="pick"><div class="prow">${WORLDS.map((w, i) => `<button class="chipb w ${i === sel.wi ? "on" : ""}" data-w="${i}" style="--c:${w.color}">${wt(w, "name")}</button>`).join("")}</div>
+        <div class="prow">${WORLDS[sel.wi].stages.map((s, i) => `<button class="chipb s ${i === sel.si ? "on" : ""} ${s.boss ? "boss" : ""}" data-s="${i}">${s.boss ? "👾 " + L("الوحش", "Boss") : L("مرحلة", "Stage") + " " + AR(i + 1)}</button>`).join("")}</div></div>
+        <div class="row"><button class="btn pri" id="tStart">▶ ${L("ابدئي اللعب", "Start")} (${AR(L3.length)}/${AR(3)})</button><button class="btn" id="tLeave">${L("إغلاق الغرفة", "Close room")}</button></div>`
+      : `<p class="twait">⏳ ${L("بانتظار المضيفة لتبدأ…", "Waiting for the host to start…")} <b>${stName(sel.wi, sel.si)}</b></p><div class="row"><button class="btn" id="tLeave">${L("خروج من الغرفة", "Leave room")}</button></div>`}
+      <div class="tstatus" id="tStatus"></div>`;
+    const my = ++this._bic, cvs = $$(".slotcv"), lp = () => { if (this._bic !== my || !cvs.length || !document.body.contains(cvs[0])) return; const t = performance.now() / 1000;
+      cvs.forEach(cv => { const g = cv.getContext("2d"), p = L3[+cv.dataset.i]; if (!p) return; g.clearRect(0, 0, 220, 220); const st = ["idle", "idle", "success", "idle"][Math.floor(t / 1.8 + +cv.dataset.i) % 4]; Robo.draw(g, p.look || { body: 0, acc: 0, accCol: 8 }, st, Robo.frame(st, t + +cv.dataset.i), 132, 212, 330, true, 0, t); }); requestAnimationFrame(lp); }; lp();
+    if (host) {
+      $("#tCopy").onclick = () => { try { navigator.clipboard.writeText(Net.room); this.toast(L("نُسخ الكود ✔", "Code copied ✔")); } catch (e) { } };
+      $$(".chipb.w").forEach(b => b.onclick = () => { Net.sel = { wi: +b.dataset.w, si: 0 }; SFX.click(); Net.pushLobby(); });
+      $$(".chipb.s").forEach(b => b.onclick = () => { Net.sel = { wi: Net.sel.wi, si: +b.dataset.s }; SFX.click(); Net.pushLobby(); });
+      $("#tStart").onclick = () => { SFX.click(); Net.start(Net.sel.wi, Net.sel.si); };
+    }
+    $("#tLeave").onclick = () => Net.leave();
+  },
+  teamGuestPlay(wi) {
+    ["menu", "worlds", "stages", "profile", "book", "team"].forEach(s => $("#" + s).classList.add("hidden")); $("#hud").classList.remove("hidden"); this.closeModal();
+    Eng.team = true; Eng.T = null; Eng.parts = []; Eng.fx = []; SFX.music(wi);
+  },
+  teamExit(fromPause) {
+    if (Net.host) { this.modal(`<h3>${L("الرجوع لغرفة الفريق؟", "Back to the team room?")}</h3><p>${L("ستنتهي المرحلة الحالية للجميع.", "The current stage will end for everyone.")}</p><div class="row"><button class="btn pri" id="xY">${L("نعم", "Yes")}</button><button class="btn" id="xN">${L("إلغاء", "Cancel")}</button></div>`); $("#xY").onclick = () => { this.closeModal(); Net.toLobby(); }; $("#xN").onclick = () => this.closeModal(); }
+    else { this.modal(`<h3>${L("الخروج من الغرفة؟", "Leave the room?")}</h3><div class="row"><button class="btn pri" id="xY">${L("خروج", "Leave")}</button><button class="btn" id="xN">${L("إلغاء", "Cancel")}</button></div>`); $("#xY").onclick = () => { this.closeModal(); Net.leave(); }; $("#xN").onclick = () => this.closeModal(); }
   },
   worldStars(w) { return w.stages.reduce((a, _, i) => a + Save.stars(`${w.id - 1}-${i}`), 0); },
   unlockedWorld(wi) { return this.unlockAll || wi === 0 || WORLDS[wi - 1].stages.every((_, i) => Save.stars(`${wi - 1}-${i}`) > 0); },
@@ -145,12 +193,13 @@ const UI = {
     $("#bkB").onclick = () => this.menu();
   },
   play(wi, si, opts = {}) {
-    ["menu", "worlds", "stages", "profile", "book"].forEach(s => $("#" + s).classList.add("hidden")); $("#hud").classList.remove("hidden"); this.closeModal();
+    if (Net.host && Net.live && !opts.team) return Net.start(wi, si);
+    ["menu", "worlds", "stages", "profile", "book", "team"].forEach(s => $("#" + s).classList.add("hidden")); $("#hud").classList.remove("hidden"); this.closeModal();
     const isBoss = !opts.lab && WORLDS[wi].stages[si] && WORLDS[wi].stages[si].boss, go = () => { SFX.music(isBoss ? "boss" : wi); Eng.start(wi, si, opts); };
-    if (isBoss && !Save.d["boss" + wi]) { Save.d["boss" + wi] = true; Save.save(); this.modal(`<canvas id="bIntro" width="360" height="300" style="width:360px;height:300px"></canvas><h3>${L("المعركة!", "Boss fight!")}</h3><p>${L(BOSS_TXT.intro[0], BOSS_TXT.intro[1])}</p><div class="row"><button class="btn pri" id="gx">${L("لنهزمه!", "Let's beat it!")}</button></div>`);
+    if (isBoss && !opts.team && !Save.d["boss" + wi]) { Save.d["boss" + wi] = true; Save.save(); this.modal(`<canvas id="bIntro" width="360" height="300" style="width:360px;height:300px"></canvas><h3>${L("المعركة!", "Boss fight!")}</h3><p>${L(BOSS_TXT.intro[0], BOSS_TXT.intro[1])}</p><div class="row"><button class="btn pri" id="gx">${L("لنهزمه!", "Let's beat it!")}</button></div>`);
       const bi = $("#bIntro"), g = bi.getContext("2d"), loop = () => { if (!document.body.contains(bi)) return; g.clearRect(0, 0, 360, 300); Boss.monster(g, 180, 170, 62, BOSS_COL[wi], { t: performance.now() / 1000, look: { x: 180, y: 320 }, wind: (performance.now() / 1000 % 3) > 2.2 ? .8 : 0 }); requestAnimationFrame(loop); }; loop(); SFX.roar();
       $("#gx").onclick = () => { this.closeModal(); go(); }; return; }
-    if (si === 0 && !Save.d["seen" + wi]) { Save.d["seen" + wi] = true; Save.save(); const w = WORLDS[wi];
+    if (si === 0 && !opts.team && !Save.d["seen" + wi]) { Save.d["seen" + wi] = true; Save.save(); const w = WORLDS[wi];
       this.modal(`<h3>${L("عالم", "World:")} ${wt(w, "name")}</h3><p>${wt(w, "intro")}</p><p style="font-size:26px;color:#9fb0ff">${L(`لديك ${AR(ENERGY_MAX)} وحدات طاقة. الاستنتاج الخاطئ يكلّف ٢، والمحاولة الفاشلة تكلّف ١. حرّكي ذرّة بالأسهم ← → واقفزي بـ ↑ (أو A وD وW)، والمسي البطاريات لجمعها (+٣).`, `You have ${AR(ENERGY_MAX)} energy units. A wrong deduction costs 2, a failed attempt costs 1. Move Zarra with the arrow keys ← → and jump with ↑ (or A, D, W), and touch batteries to collect them (+3).`)}<br>${[L("في هذا العالم: اضغطي مطوّلًا على «جرّبي» لتشحني قوة الدفع، ثم اتركي ليدفع ذرّة الصندوق.", "In this world: press and hold Try to charge the push force, then release so Zarra pushes the crate."), L("في هذا العالم: امشي إلى المرآة واضغطي ↓ لتمسكيها، ثم دوّريها بـ ← →.", "In this world: walk to the mirror and press ↓ to grab it, then rotate it with ← →."), L("في هذا العالم: اسحبي المسبار للخلف بالفأرة مثل المقلاع ثم اتركيه.", "In this world: pull the probe back with the mouse like a slingshot, then let go."), L("في هذا العالم: كل الحركات السابقة معًا!", "In this world: all the previous moves together!")][wi]}</p><div class="row"><button class="btn pri" id="gx">${L("هيا", "Go")}</button></div>`);
       $("#gx").onclick = () => { this.closeModal(); go(); }; } else go();
   },
@@ -171,7 +220,7 @@ const UI = {
   buildSliders() {
     const T = Eng.T, ph = Eng.phase, n = ph === "act" ? T.sliders.length : 1;
     $("#sliders").innerHTML = T.sliders.slice(0, n).map((s, i) => `<div class="sl"><label><span>${s.label}</span><b id="sv${i}">${AR(T.vals[i])}</b></label><input type="range" tabindex="-1" id="sr${i}" min="${s.min}" max="${s.max}" step="${s.step}" value="${T.vals[i]}"></div>`).join("");
-    T.sliders.slice(0, n).forEach((s, i) => { const r = $("#sr" + i); r.oninput = () => { T.vals[i] = +r.value; if (s.key) T[s.key] = T.vals[i]; $("#sv" + i).textContent = AR(T.vals[i]); SFX.tick(); if (Eng.K.scene === "light") { T.beam = null; T.mirrors[i].phi = T.vals[i]; } if (Eng.K.scene === "gravity") T.trail = null; }; });
+    T.sliders.slice(0, n).forEach((s, i) => { const r = $("#sr" + i); r.oninput = () => { if (Net.guest) Net.send(Net.conn, { t: "act", fn: "val", a: [i, +r.value] }); T.vals[i] = +r.value; if (s.key) T[s.key] = T.vals[i]; $("#sv" + i).textContent = AR(T.vals[i]); SFX.tick(); if (Eng.K.scene === "light") { T.beam = null; T.mirrors[i].phi = T.vals[i]; } if (Eng.K.scene === "gravity") T.trail = null; }; });
   },
   syncSlider(i) { const r = $("#sr" + i), v = $("#sv" + i); if (r) r.value = Eng.T.vals[i]; if (v) v.textContent = AR(Eng.T.vals[i]); },
   panel() {
@@ -205,24 +254,25 @@ const UI = {
   lawReveal(kind, fresh) { this.toast(L("✦ اكتشفتِ: ", "✦ You discovered: ") + lw(kind, "short") + (fresh ? L(" · 📖 بطاقة جديدة في كتاب الذاكرة!", " · 📖 New card in the Memory Book!") : "")); },
   hintModal(t, free, arch) { this.modal(`<h3>${arch ? "🖥️ " + L("أرشيف الذاكرة", "Memory Archive") : L("تلميح", "Hint")}</h3><p>${t}</p><p style="font-size:22px;opacity:.7">${free ? L("هذا التلميح مجاني.", "This hint is free.") : L("كلّف التلميح وحدة طاقة.", "The hint cost 1 energy.")}</p><div class="row"><button class="btn pri" id="hx">${L("فهمت", "Got it")}</button></div>`); $("#hx").onclick = () => this.closeModal(); },
   pause() { if (Eng.phase === "idle") return; this.modal(`<h3>${L("إيقاف مؤقت", "Paused")}</h3><div class="row"><button class="btn pri" id="p1">${L("متابعة", "Resume")}</button><button class="btn" id="p2">${L("إعادة المرحلة", "Restart stage")}</button><button class="btn" id="p3">${L("المراحل", "Stages")}</button><button class="btn" id="p4">${SFX.on ? "🔊" : "🔇"} ${L("الصوت", "Sound")}</button></div>`);
-    $("#p1").onclick = () => this.closeModal(); $("#p2").onclick = () => { this.closeModal(); Eng.start(Eng.wi, Eng.si, { code: Eng.code, lab: Eng.sandbox }); }; $("#p3").onclick = () => { this.closeModal(); this.stages(Eng.wi); };
+    $("#p1").onclick = () => this.closeModal(); $("#p2").onclick = () => { this.closeModal(); if (Eng.team) { if (Net.host) Net.start(Eng.wi, Eng.si); return; } Eng.start(Eng.wi, Eng.si, { code: Eng.code, lab: Eng.sandbox }); }; $("#p3").onclick = () => { this.closeModal(); if (Eng.team) return this.teamExit(true); this.stages(Eng.wi); };
     $("#p4").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); this.pause(); }; },
   winModal(stars) { $("#toast").classList.remove("on");
     const w = Eng.w, LW = w.id === 4 ? null : w.law, hasNext = Eng.si < w.stages.length - 1, lastWorld = Eng.wi === 3 && Eng.si === w.stages.length - 1, bossWin = Eng.boss;
     this.modal(`<h3>${bossWin ? (lastWorld ? L("هزمتِ المُشتِّت واستعدتِ ذاكرة الكون! 🎉", "You beat the Scatterer and restored the Memory of the Universe! 🎉") : L("هزمتِ المُشتِّت! 💥", "You beat the Scatterer! 💥")) : lastWorld ? L("استعدتِ ذاكرة الكون! 🎉", "You restored the Memory of the Universe! 🎉") : L("أحسنتِ!", "Well done!")}</h3><div class="stars">${[1, 2, 3].map(i => `<img src="assets/ui/${i <= stars ? "star" : "star0"}.png" alt="">`).join("")}</div><p>${LW ? `<b style="color:#FFE08A">${lw(LW, "name")}</b><br>${lw(LW, "text")}` : L("جمعتِ القوانين كلها في الذاكرة.", "You gathered all the laws into the Memory.")}</p>${Eng.lastSol ? `<div class="solv">✔ ${L("الحل", "Solution")}: ${Eng.lastSol}</div>` : ""}<p style="font-size:24px;opacity:.8">${L("الطاقة المتبقية: ", "Energy left: ")}${AR(Eng.energy)}</p>${Eng.code ? (() => { const s = Math.round((performance.now() - Eng.t0) / 1000), tm = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; return `<div class="chal">🏁 ${L("كود التحدي", "Challenge code")}: <b>${Eng.code}</b> · ⚡ ${AR(Eng.energy)} · ⏱ ${tm}<br><small>${L("أرسلي الكود لصديقاتك وقارنّ النتائج!", "Send the code to your friends and compare scores!")}</small></div>`; })() : ""}<div class="row">${hasNext ? `<button class="btn pri" id="n1">${L("المرحلة التالية", "Next stage")}</button>` : `<button class="btn pri" id="n1">${Eng.wi < 3 ? L("العالم التالي", "Next world") : L("القائمة", "Menu")}</button>`}<button class="btn" id="n2">${L("إعادة", "Replay")}</button><button class="btn" id="n3">${L("المراحل", "Stages")}</button></div>`);
-    $("#n1").onclick = () => { this.closeModal(); if (hasNext) this.play(Eng.wi, Eng.si + 1); else if (Eng.wi < 3) this.stages(Eng.wi + 1); else this.menu(); };
-    $("#n2").onclick = () => { this.closeModal(); this.play(Eng.wi, Eng.si, { code: Eng.code }); }; $("#n3").onclick = () => { this.closeModal(); this.stages(Eng.wi); };
+    $("#n1").onclick = () => { this.closeModal(); if (hasNext) this.play(Eng.wi, Eng.si + 1); else if (Eng.team) { if (Eng.wi < 3) Net.start(Eng.wi + 1, 0); else Net.toLobby(); } else if (Eng.wi < 3) this.stages(Eng.wi + 1); else this.menu(); };
+    if (Eng.team) { $("#n3").textContent = "👥 " + L("غرفة الفريق", "Team room"); }
+    $("#n2").onclick = () => { this.closeModal(); this.play(Eng.wi, Eng.si, { code: Eng.code }); }; $("#n3").onclick = () => { this.closeModal(); if (Eng.team) return Net.toLobby(); this.stages(Eng.wi); };
   },
   loseModal() { $("#toast").classList.remove("on"); const free = Eng.losses >= 2; this.modal(`<h3>${L("نفدت الطاقة", "Out of energy")}</h3><p>${L("ذرّة تحتاج إلى إعادة شحن. جرّبي من جديد، فالقيم تتغيّر في كل مرة.", "Zarra needs a recharge. Try again, the values change every time.")}${free ? "<br>" + L("التلميحات صارت مجانية الآن.", "Hints are free now.") : ""}</p><div class="row"><button class="btn pri" id="l1">${L("إعادة المحاولة", "Try again")}</button><button class="btn" id="l2">${L("المراحل", "Stages")}</button></div>`);
-    $("#l1").onclick = () => { this.closeModal(); this.play(Eng.wi, Eng.si, { code: Eng.code }); }; $("#l2").onclick = () => { this.closeModal(); this.stages(Eng.wi); }; },
+    $("#l1").onclick = () => { this.closeModal(); this.play(Eng.wi, Eng.si, { code: Eng.code }); }; $("#l2").onclick = () => { this.closeModal(); if (Eng.team) return Net.toLobby(); this.stages(Eng.wi); }; if (Eng.team) $("#l2").textContent = "👥 " + L("غرفة الفريق", "Team room"); },
   async init() {
     Save.load(); this.applyLang(); this.fit(); addEventListener("resize", () => this.fit()); await loadImages();
-    const cv = $("#cv"), P = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / this.scale, (e.clientY - r.top) / this.scale]; };
+    const cv = $("#cv"), P = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / this.scale + Eng.camX, (e.clientY - r.top) / this.scale]; };
     cv.addEventListener("pointerdown", e => { cv.setPointerCapture && cv.setPointerCapture(e.pointerId); Eng.pointer("down", ...P(e)); });
     cv.addEventListener("pointermove", e => Eng.pointer("move", ...P(e))); cv.addEventListener("pointerup", e => Eng.pointer("up", ...P(e))); cv.addEventListener("pointercancel", () => { Eng.drag = null; });
     ["bTest", "bAct"].forEach(id => { const b = $("#" + id); b.addEventListener("pointerdown", e => { e.preventDefault(); Eng.pressStart(); }); b.addEventListener("pointerup", () => Eng.pressEnd()); b.addEventListener("pointerleave", () => { if (Eng.charge) Eng.pressEnd(); }); });
     $("#bDeduce").onclick = () => Eng.deduce();
-    $("#bHint").onclick = () => Eng.hint(); $("#bPause").onclick = () => this.pause(); $("#bBack").onclick = () => this.stages(Eng.wi); $("#bSound").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); $("#bSound img").src = `assets/ui/sound_${SFX.on ? "on" : "off"}.png`; };
+    $("#bHint").onclick = () => Eng.hint(); $("#bPause").onclick = () => this.pause(); $("#bBack").onclick = () => { if (Eng.team) return this.teamExit(); this.stages(Eng.wi); }; $("#bSound").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); $("#bSound img").src = `assets/ui/sound_${SFX.on ? "on" : "off"}.png`; };
     addEventListener("pointerdown", () => { SFX.unlock(); if (SFX.on && !SFX.mus) SFX.music(SFX.key || "menu"); }, { once: false });
     const KM = { ArrowLeft: "l", a: "l", A: "l", ArrowRight: "r", d: "r", D: "r", ArrowUp: "j", w: "j", W: "j", " ": "j", ArrowDown: "g", s: "g", S: "g" };
     addEventListener("keydown", e => { if ($("#hud").classList.contains("hidden") || e.target.tagName === "INPUT" && e.target.type === "text") return; if (e.key === "Enter") { e.preventDefault(); if (!e.repeat) Eng.pressStart(); return; } const k = KM[e.key]; if (!k) return; e.preventDefault(); if (k === "g" && e.repeat) return; Eng.keys[k] = 1; Eng.idleT = 0; });
@@ -230,7 +280,7 @@ const UI = {
     addEventListener("blur", () => { Eng.keys.l = Eng.keys.r = Eng.keys.j = 0; });
     [["pL", "l"], ["pR", "r"], ["pJ", "j"], ["pG", "g"]].forEach(([id, k]) => { const b = $("#" + id); b.addEventListener("pointerdown", e => { e.preventDefault(); Eng.keys[k] = 1; }); ["pointerup", "pointerleave", "pointercancel"].forEach(ev => b.addEventListener(ev, () => { if (k !== "j" && k !== "g") Eng.keys[k] = 0; })); });
     this.menu(); $("#bSound img").src = `assets/ui/sound_${SFX.on ? "on" : "off"}.png`; const c = cv.getContext("2d"); let last = performance.now();
-    const loop = now => { const dt = Math.min(.05, (now - last) / 1000); last = now; Eng.update(dt); Eng.draw(c); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+    const loop = now => { const dt = Math.min(.05, (now - last) / 1000); last = now; Eng.update(dt); Net.tick(dt); Eng.draw(c); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     window.__ready = true;
   }
 };

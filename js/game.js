@@ -62,7 +62,7 @@ KINDS.force = {
     const an = T.anim; if (!an) return; an.t += dt;
     const tt = Math.min(an.t, an.mode === "test" ? .8 : 2);
     const px = T.cx; T.cx = Math.max(90, T.x0 - 100 * an.a * tt * tt);
-    if (an.t < .3) { Eng.rb.x = T.cx + 100; Eng.rb.dir = -1; }
+    if (an.t < .3) { const pr = (Eng.players[T.pusher || 0] || Eng.P).rb; pr.x = T.cx + 100; pr.dir = -1; }
     if (px - T.cx > 2 && Math.random() < .6) Eng.part(T.cx + 70, GY - 4, { col: "#e9c48a", vx: 40 + Math.random() * 60, vy: -40 - Math.random() * 60, g: 120, life: .7, r: 6 + Math.random() * 8 });
     if (an.t >= an.dur) {
       T.anim = null;
@@ -157,7 +157,7 @@ KINDS.light = {
         c.stroke();
       } c.restore();
     }
-    if (Eng.grab != null && T.mirrors[Eng.grab]) { const m = T.mirrors[Eng.grab], rx = Eng.rb.x, ry = Eng.robotY() - 210; c.save(); c.strokeStyle = "rgba(127,232,255,.8)"; c.lineWidth = 4; c.setLineDash([10, 8]); c.lineDashOffset = -Eng.t * 60; c.beginPath(); c.moveTo(rx, ry); c.quadraticCurveTo((rx + m.x) / 2, Math.min(ry, m.y) - 80, m.x, m.y); c.stroke(); c.setLineDash([]); c.strokeStyle = "rgba(127,232,255,.9)"; c.beginPath(); c.arc(m.x, m.y, 100 + Math.sin(Eng.t * 6) * 6, 0, 7); c.stroke(); c.restore(); }
+    if (Eng.grab != null && T.mirrors[Eng.grab]) { const gp = (Eng.players[Eng.grabPi] || Eng.P).rb, m = T.mirrors[Eng.grab], rx = gp.x, ry = Eng.gyBase() - gp.jh - 210; c.save(); c.strokeStyle = "rgba(127,232,255,.8)"; c.lineWidth = 4; c.setLineDash([10, 8]); c.lineDashOffset = -Eng.t * 60; c.beginPath(); c.moveTo(rx, ry); c.quadraticCurveTo((rx + m.x) / 2, Math.min(ry, m.y) - 80, m.x, m.y); c.stroke(); c.setLineDash([]); c.strokeStyle = "rgba(127,232,255,.9)"; c.beginPath(); c.arc(m.x, m.y, 100 + Math.sin(Eng.t * 6) * 6, 0, 7); c.stroke(); c.restore(); }
     else if (ph === "measure" || ph === "act") { const k = Eng.nearMirror(); if (k != null) { const m = T.mirrors[k]; c.save(); c.fillStyle = "#FFC83D"; c.font = "800 30px Cairo"; c.textAlign = "center"; c.fillText(L("↓ أمسكي المرآة", "↓ grab mirror"), m.x, m.y - 100 + Math.sin(Eng.t * 4) * 5); c.restore(); } }
     ms.forEach(m => { const u = { x: Math.cos(rad(m.phi)), y: -Math.sin(rad(m.phi)) };
       c.save(); c.lineCap = "round"; c.strokeStyle = "#1c2a4a"; c.lineWidth = 16; c.beginPath(); c.moveTo(m.x - u.x * m.len / 2, m.y - u.y * m.len / 2); c.lineTo(m.x + u.x * m.len / 2, m.y + u.y * m.len / 2); c.stroke();
@@ -257,12 +257,11 @@ const Boss = {
     const p = this.pos(), active = Eng.phase === "act" && !Eng.locked && !Eng.K.busy(Eng.T) && !document.querySelector("#modal:not(.hidden)") && this.die === 0;
     if (active) { if (this.wind > 0) { this.wind += dt; if (this.wind >= 1.1) { this.wind = 0; this.fire(p); } } else { this.timer += dt; if (this.timer >= this.every) { this.timer = 0; this.wind = .001; SFX.charge(); } } }
     else if (this.wind > 0 && Eng.phase !== "act") this.wind = 0;
-    const rx = Eng.rb.x, ry = Eng.robotY() - 110;
-    this.shots.forEach(s => { s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt; if (Math.random() < .7) Eng.part(s.x, s.y, { col: this.col, vx: (Math.random() - .5) * 40, vy: (Math.random() - .5) * 40, g: 0, life: .45, r: 6 + Math.random() * 6 });
-      if (!s.dead && Math.hypot(s.x - rx, s.y - ry) < 72) { s.dead = true; Eng.boom(s.x, s.y, [this.col, "#2a0f45", "#fff"], 22, 320); Eng.shake = 12; Eng.setRobot("fail", .8); Eng.say("ouch", true); Eng.stun = .35; Eng.spend(1); UI.toast(L("أصابتك كرة الظلام! (−١ طاقة) اقفزي ↑ لتتفاديها.", "The dark orb hit you! (−1 energy) Jump ↑ to dodge it.")); } });
+    this.shots.forEach(s => { const hitP = Eng.players.find(p => Math.hypot(s.x - p.rb.x, s.y - (Eng.gyBase() - p.rb.jh - 110)) < 72); const rx = hitP ? hitP.rb.x : -9999, ry = hitP ? Eng.gyBase() - hitP.rb.jh - 110 : -9999; s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt; if (Math.random() < .7) Eng.part(s.x, s.y, { col: this.col, vx: (Math.random() - .5) * 40, vy: (Math.random() - .5) * 40, g: 0, life: .45, r: 6 + Math.random() * 6 });
+      if (!s.dead && Math.hypot(s.x - rx, s.y - ry) < 72) { s.dead = true; Eng.boom(s.x, s.y, [this.col, "#2a0f45", "#fff"], 22, 320); Eng.shake = 12; const kk = Eng.ai; Eng.ai = Eng.players.indexOf(hitP); Eng.setRobot("fail", .8); Eng.say("ouch", true); Eng.stun = .35; Eng.ai = kk; Eng.spend(1); UI.toast(L("أصابتك كرة الظلام! (−١ طاقة) اقفزي ↑ لتتفاديها.", "The dark orb hit you! (−1 energy) Jump ↑ to dodge it.")); } });
     this.shots = this.shots.filter(s => !s.dead && s.t < 6 && s.x > -80 && s.x < 1680 && s.y > -80 && s.y < 980);
   },
-  fire(p) { const rx = Eng.rb.x, ry = Eng.robotY() - 110, d = Math.hypot(rx - p.x, ry - p.y) || 1, sp = 560; this.shots.push({ x: p.x, y: p.y, vx: (rx - p.x) / d * sp, vy: (ry - p.y) / d * sp, t: 0 }); SFX.zap(); Eng.say("incoming"); },
+  fire(p) { const tp = rnd(Eng.players), rx = tp.rb.x, ry = Eng.gyBase() - tp.rb.jh - 110, d = Math.hypot(rx - p.x, ry - p.y) || 1, sp = 560; this.shots.push({ x: p.x, y: p.y, vx: (rx - p.x) / d * sp, vy: (ry - p.y) / d * sp, t: 0 }); SFX.zap(); Eng.say("incoming"); },
   hit() { this.hurt = 1; this.hurtDone = true; this.shots = []; this.wind = 0; const p = this.pos(); Eng.boom(p.x, p.y, [this.col, "#fff", "#FFE08A"], 50, 520); Eng.shake = 20; SFX.roar(); if (Eng.ti >= Eng.tasks.length - 1) { this.die = .001; } },
   draw(c) {
     if (!this.on || !Eng.T) return; const p = this.pos();
@@ -308,9 +307,17 @@ const Boss = {
 const Eng = {
   w: null, wi: 0, si: 0, ti: 0, tasks: null, T: null, K: null, energy: 10, phase: "idle", rows: [], cells: [], fx: [], t: 0,
   parts: [], shake: 0, slow: 0, charge: null, grab: null, gacc: 0, drag: null, bubble: null, idleT: 0, code: null, sandbox: false, t0: 0, lowSaid: false,
-  robot: { s: "idle", hold: 0 }, rb: { x: 0, vx: 0, sq: 0, dir: -1, jh: 0, vy: 0, air: false, moving: false }, keys: { l: 0, r: 0, j: 0 }, losses: 0, lawOk: false, hintUsed: false, solved: false, locked: false,
+  players: [], ai: 0, me: 0, team: false, WW: 1600, camX: 0, grabPi: 0,
+  mkP(id, name, look) { return { id, name, look, rb: { x: 0, vx: 0, sq: 0, dir: -1, jh: 0, vy: 0, air: false, moving: false }, keys: { l: 0, r: 0, j: 0, g: 0 }, robot: { s: "idle", hold: 0 }, stun: 0, jbuf: 0 }; },
+  get P() { if (!this.players.length) this.players = [this.mkP("me", "", null)]; return this.players[this.ai] || this.players[0]; },
+  get rb() { return this.P.rb; }, get keys() { return this.P.keys; }, get robot() { return this.P.robot; },
+  get stun() { return this.P.stun; }, set stun(v) { this.P.stun = v; }, get jbuf() { return this.P.jbuf; }, set jbuf(v) { this.P.jbuf = v; },
+  each(fn) { const k = this.ai; this.players.forEach((p, i) => { this.ai = i; fn(p, i); }); this.ai = k; },
+  gyBase() { return this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy; },
+  losses: 0, lawOk: false, hintUsed: false, solved: false, locked: false,
   start(wi, si, opts = {}) {
-    this.wi = wi; this.si = si; this.w = WORLDS[wi]; this.energy = ENERGY_MAX; this.ti = 0; this.solved = false; this.locked = false;
+    this.team = !!opts.team; this.wi = wi; this.si = si; this.w = WORLDS[wi]; this.energy = ENERGY_MAX; this.ti = 0; this.solved = false; this.locked = false;
+    if (!this.team) { const pk = this.players[0] && this.players[0].keys; this.players = [this.mkP("me", (Save.d.profile || {}).name || "", null)]; if (pk) this.players[0].keys = pk; this.me = 0; } this.ai = this.me; this.WW = this.team ? 2400 : 1600; this.camX = 0;
     this.code = opts.code || null; this.sandbox = !!opts.lab; this.t0 = performance.now(); this.lastSol = "";
     this.boss = !this.sandbox && !!(this.w.stages[si] && this.w.stages[si].boss); if (this.boss) Boss.start(wi); else Boss.stop();
     const key = `${wi}-${si}`; this.losses = Save.d.losses[key] || 0;
@@ -324,10 +331,11 @@ const Eng = {
     const n = this.boss ? 1 : this.tasks.length > 1 ? 2 : 4; this.cells = this.sandbox ? [] : shuffle(this.K.cellsAt || this.T.cellsAt).slice(0, n).map(p => ({ x: p[0], y: p[1], got: false }));
     if (this.boss) { Boss.prep(this.T, this.K.scene); const bp = Boss.pos(), sp = (this.K.cellsAt || this.T.cellsAt).filter(p => Math.hypot(p[0] - bp.x, p[1] - bp.y) > 230 && Math.abs(p[0] - this.termX()) > 120); this.cells = shuffle(sp).slice(0, 1).map(p => ({ x: p[0], y: p[1], got: false })); }
     RNG = Math.random;
-    Object.assign(this.rb, { x: this.K.robot.x, vx: 0, dir: -1, jh: 0, vy: 0, air: false, moving: false });
+    this.players.forEach((p, i) => { Object.assign(p.rb, { x: clamp(this.K.robot.x + (this.K.robot.x < 800 ? 1 : 1) * i * 170, 90, this.WW - 90), vx: 0, dir: -1, jh: 0, vy: 0, air: false, moving: false }); p.stun = 0; p.jbuf = 0; p.robot.s = "idle"; p.robot.hold = 0; });
+    if (this.team && !this.sandbox) [[1850, 590], [2150, 470], [2300, 600]].slice(0, this.players.length).forEach(p => this.cells.push({ x: p[0], y: this.K.scene === "gravity" ? p[1] + 20 : p[1], got: false }));
     const K = this.K, fk = `${this.wi}-${this.si}`;
     this.hz = (this.sandbox || this.boss) ? null : { x: K.hz[0] + (K.hz[1] - K.hz[0]) * Math.random(), dir: Math.random() < .5 ? -1 : 1, kind: ["dust", "spark", "rock", ["dust", "spark", "rock"][this.ti % 3]][this.wi], spin: 0 };
-    this.frag = (!this.sandbox && !this.boss && this.ti === 0 && K.frags[this.si] && !Save.d.frags[fk]) ? { x: K.frags[this.si][0], y: K.frags[this.si][1], key: fk } : null;
+    this.frag = (!this.sandbox && !this.boss && !this.team && this.ti === 0 && K.frags[this.si] && !Save.d.frags[fk]) ? { x: K.frags[this.si][0], y: K.frags[this.si][1], key: fk } : null;
     if (this.sandbox) { const T = this.T, sc = this.K.scene;
       if (sc === "force") { T.sliders.push({ label: L("كتلة الصندوق m (كغ)", "Crate mass m (kg)"), min: 1, max: 10, step: .5, key: "m" }); T.vals.push(T.m); T.goal = L("المختبر الحر: غيّري القوة والكتلة وراقبي التسارع", "Free lab: change force and mass and watch the acceleration"); }
       if (sc === "gravity") { T.sliders.push({ label: L("كتلة الكوكب M", "Planet mass M"), min: 1, max: 6, step: .5, key: "M" }); T.vals.push(T.M); T.goal = L("المختبر الحر: غيّري السرعة وكتلة الكوكب", "Free lab: change the speed and the planet's mass"); }
@@ -336,15 +344,16 @@ const Eng = {
     this.hintUsed = false; this.phase = this.sandbox ? "act" : this.w.id === 4 ? "law" : this.boss ? "act" : "measure"; UI.onPhase();
     this.say(this.sandbox ? "lab" : this.boss ? (this.ti ? "bossnext" : "boss") : "start", true);
   },
-  robotY() { return (this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy) - this.rb.jh; },
+  robotY() { return this.gyBase() - this.rb.jh; },
   part(x, y, o) { if (this.parts.length < 400) this.parts.push(Object.assign({ x, y, vx: 0, vy: 0, g: 600, life: 1, t: 0, r: 6, col: "#fff", grow: 0 }, o)); },
   boom(x, y, cols, n = 24, sp = 400) { for (let k = 0; k < n; k++) { const a = Math.random() * Math.PI * 2, v = sp * (.3 + Math.random() * .7); this.part(x, y, { col: cols[k % cols.length], vx: Math.cos(a) * v, vy: Math.sin(a) * v - sp * .3, g: 700, life: .6 + Math.random() * .6, r: 4 + Math.random() * 7 }); } },
   say(key, force = false) {
     const pool = SAY[key]; if (!pool) return; if (this.bubble && this.bubble.t < this.bubble.dur - .3 && !force) return;
-    const p = pool[Math.floor(Math.random() * pool.length)]; this.bubble = { txt: LANG === "en" ? p[1] : p[0], t: 0, dur: 2.9 };
+    const p = pool[Math.floor(Math.random() * pool.length)]; this.bubble = { txt: LANG === "en" ? p[1] : p[0], t: 0, dur: 2.9, pi: this.ai };
   },
-  busyNow() { return !this.T || this.K.busy(this.T) || this.locked || (this.phase !== "measure" && this.phase !== "act") || !!document.querySelector("#modal:not(.hidden)"); },
-  pressStart() { this.idleT = 0; if (this.busyNow()) return; if (this.K.scene === "force") { this.charge = { v: 1, t: 0, st: 0 }; this.grab = null; this.bubble = null; } },
+  modalFor() { return this.ai === this.me && !!document.querySelector("#modal:not(.hidden)"); },
+  busyNow() { return !this.T || this.K.busy(this.T) || this.locked || (this.phase !== "measure" && this.phase !== "act") || this.modalFor(); },
+  pressStart() { this.idleT = 0; if (this.busyNow()) return; if (this.K.scene === "force") { this.charge = { v: 1, t: 0, st: 0, pi: this.ai }; if (this.grabPi === this.ai) this.grab = null; this.bubble = null; } },
   pressEnd() {
     const ch = this.charge; this.charge = null; if (this.busyNow()) return;
     if (ch && ch.t > .15) { this.T.vals[0] = Math.round(ch.v * 2) / 2; UI.syncSlider(0); }
@@ -354,7 +363,7 @@ const Eng = {
     ms.forEach((m, i) => { const d = Math.abs(this.rb.x - m.x); if (d < bd) { bd = d; best = i; } }); return best; },
   termX() { return this.boss ? (this.K.scene === "gravity" ? 700 : 1470) : this.K.terminal; },
   interact() {
-    if (this.grab != null) { this.grab = null; SFX.click(); return; }
+    if (this.grab != null && this.grabPi === this.ai) { this.grab = null; SFX.click(); return; }
     if (this.K.scene === "light" && this.nearMirror() != null) return this.toggleGrab();
     const tx = this.termX(); if (!this.sandbox && tx != null && Math.abs(this.rb.x - tx) < 95) { if (this.busyNow()) return; this.setRobot("scan", 1.2); SFX.test(); this.say("archive", true); UI.hintModal(this.hintText(), true, true); return; }
     UI.toast(this.K.scene === "light" ? L("اقتربي من مرآة أو من جهاز الأرشيف 🖥️ ثم اضغطي ↓", "Walk to a mirror or the archive terminal 🖥️, then press ↓") : L("اقتربي من جهاز الأرشيف 🖥️ ثم اضغطي ↓ لتلميح مجاني", "Walk to the archive terminal 🖥️ and press ↓ for a free hint"));
@@ -377,9 +386,10 @@ const Eng = {
   },
   toggleGrab() {
     if (this.K.scene !== "light" || this.busyNow()) return;
-    if (this.grab != null) { this.grab = null; SFX.click(); return; }
+    if (this.grab != null && this.grabPi === this.ai) { this.grab = null; SFX.click(); return; }
+    if (this.grab != null) { UI.toast(L("صديقتك ممسكة بالمرآة الآن.", "Your friend is holding the mirror.")); return; }
     const k = this.nearMirror(); if (k == null) { UI.toast(L("اقتربي من المرآة أولًا، ثم اضغطي ↓", "Walk to a mirror first, then press ↓")); return; }
-    this.grab = k; this.gacc = 0; SFX.click(); this.say("grab", true);
+    this.grab = k; this.grabPi = this.ai; this.gacc = 0; SFX.click(); this.say("grab", true);
   },
   pointer(type, x, y) {
     if (type === "down") { this.idleT = 0; this.collect(x, y);
@@ -412,7 +422,7 @@ const Eng = {
   },
   act() {
     if (this.K.busy(this.T) || this.phase !== "act" || this.locked) return;
-    this.grab = null; this.K.act(this.T); this.setRobot(this.K.scene === "force" ? "push" : "scan", 3); ({ force: "push", light: "beam", gravity: "launch" })[this.K.scene] && SFX[{ force: "push", light: "beam", gravity: "launch" }[this.K.scene]](); UI.controls();
+    this.grab = null; this.T.pusher = this.ai; this.K.act(this.T); this.setRobot(this.K.scene === "force" ? "push" : "scan", 3); ({ force: "push", light: "beam", gravity: "launch" })[this.K.scene] && SFX[{ force: "push", light: "beam", gravity: "launch" }[this.K.scene]](); UI.controls();
   },
   actDone(ok, msg) {
     if (this.sandbox) { const T = this.T, sc = this.K.scene;
@@ -426,9 +436,9 @@ const Eng = {
     else { this.setRobot("fail", 1.3); this.say("fail", true); UI.toast(msg || L("لم تنجح المحاولة (−١ طاقة).", "That attempt failed (−1 energy).")); this.spend(1); UI.controls(); }
   },
   win() {
-    const stars = this.energy >= 6 ? 3 : this.energy >= 3 ? 2 : 1; Save.set(`${this.wi}-${this.si}`, stars); Save.d.losses[`${this.wi}-${this.si}`] = 0; Save.save(); SFX.win(); this.phase = "done"; UI.winModal(stars);
+    const stars = this.energy >= 6 ? 3 : this.energy >= 3 ? 2 : 1; if (!this.team) { Save.set(`${this.wi}-${this.si}`, stars); Save.d.losses[`${this.wi}-${this.si}`] = 0; Save.save(); } SFX.win(); this.phase = "done"; UI.winModal(stars);
   },
-  lose() { if (this.phase === "done") return; this.phase = "done"; this.locked = true; const key = `${this.wi}-${this.si}`; this.losses++; Save.d.losses[key] = this.losses; Save.save(); SFX.lose(); this.setRobot("fail", 99); setTimeout(() => UI.loseModal(), 500); },
+  lose() { if (this.phase === "done") return; this.phase = "done"; this.locked = true; const key = `${this.wi}-${this.si}`; this.losses++; if (!this.team) { Save.d.losses[key] = this.losses; Save.save(); } SFX.lose(); this.setRobot("fail", 99); setTimeout(() => UI.loseModal(), 500); },
   hint() {
     if (this.phase === "done") return; const free = this.losses >= 2 || this.hintUsed;
     if (!free) { if (this.energy <= 1) { UI.toast(L("طاقتك لا تكفي للتلميح.", "Not enough energy for a hint.")); return; } this.spend(1); }
@@ -437,64 +447,72 @@ const Eng = {
   hintText() { const h = this.boss && BOSS_TXT.hint[this.K.scene]; return h ? L(h[0], h[1]) : this.K.hint;
   },
   update(dt) {
-    this.t += dt; if (!this.T) return;
+    this.t += dt; if (!this.T) return; if (typeof Net !== "undefined" && Net.guest) return Net.guestUpdate(dt);
     const sdt = this.slow > 0 ? dt * .28 : dt; if (this.slow > 0) this.slow -= dt; this.shake = Math.max(0, this.shake - dt * 40);
-    const r = this.robot; if (r.hold > 0) { r.hold -= dt; if (r.hold <= 0) r.s = "idle"; }
-    const ch = this.charge; if (ch) { if (this.busyNow()) this.charge = null; else { ch.t += dt; ch.v = Math.min(10, 1 + Math.max(0, ch.t - .15) * 4.2); this.rb.x = this.T.cx + 100; this.rb.dir = -1; this.setRobot("push", .2);
+    this.players.forEach(p => { const r = p.robot; if (r.hold > 0) { r.hold -= dt; if (r.hold <= 0) r.s = "idle"; } });
+    const ch = this.charge; if (ch) { if (this.busyNow() || !this.players[ch.pi]) this.charge = null; else { ch.t += dt; ch.v = Math.min(10, 1 + Math.max(0, ch.t - .15) * 4.2); const cr = this.players[ch.pi]; cr.rb.x = this.T.cx + 100; cr.rb.dir = -1; cr.robot.s = "push"; cr.robot.hold = .2;
       const st = Math.floor(ch.v * 2); if (st !== ch.st) { ch.st = st; SFX.tone(200 + ch.v * 70, .05, "triangle", .03); } } }
-    this.moveRobot(dt); this.K.update(this.T, sdt); Boss.update(dt); this.fx.forEach(f => f.t += dt); this.fx = this.fx.filter(f => f.t < 1.2);
+    const hz = this.hz; if (hz) { const [a, z] = this.K.hz, sp = hz.kind === "spark" ? 210 : 165, busyR = [this.grab != null ? this.players[this.grabPi] : null, ch ? this.players[ch.pi] : null].filter(Boolean);
+      busyR.forEach(p => { if (Math.abs(hz.x - p.rb.x) < 260) hz.dir = hz.x > p.rb.x ? 1 : -1; }); if (this.drag && Math.abs(hz.x - this.players[this.me].rb.x) < 260) hz.dir = hz.x > this.players[this.me].rb.x ? 1 : -1;
+      hz.x += hz.dir * sp * dt; hz.spin += hz.dir * dt * 6; if (hz.x < a) { hz.x = a; hz.dir = 1; } if (hz.x > z) { hz.x = z; hz.dir = -1; } }
+    this.each(() => this.moveRobot(dt)); this.K.update(this.T, sdt); Boss.update(dt); this.fx.forEach(f => f.t += dt); this.fx = this.fx.filter(f => f.t < 1.2);
     this.parts.forEach(p => { p.t += sdt; p.vy += p.g * sdt; p.x += p.vx * sdt; p.y += p.vy * sdt; p.r += p.grow * sdt; }); this.parts = this.parts.filter(p => p.t < p.life);
     if (this.bubble) { this.bubble.t += dt; if (this.bubble.t > this.bubble.dur) this.bubble = null; }
+    if (this.team) { const mx = this.players[this.me].rb.x; this.camX += (clamp(mx - 800, 0, this.WW - 1600) - this.camX) * Math.min(1, dt * 6); } else this.camX = 0;
     const quiet = !this.keys.l && !this.keys.r && !this.charge && !this.drag && !this.K.busy(this.T) && (this.phase === "measure" || this.phase === "act") && !document.querySelector("#modal:not(.hidden)");
     if (quiet) { this.idleT += dt; if (this.idleT > 15) { this.idleT = 0; this.say("idle"); } } else this.idleT = 0;
   },
   moveRobot(dt) {
-    const b = this.rb, can = !document.querySelector("#modal:not(.hidden)") && this.phase !== "law" && this.phase !== "done" && this.phase !== "idle";
+    const b = this.rb, can = !this.modalFor() && this.phase !== "law" && this.phase !== "done" && this.phase !== "idle";
     if (this.keys.g) { this.keys.g = 0; if (can) this.interact(); }
     let dx = can ? (this.keys.r - this.keys.l) : 0; if (this.stun > 0) { this.stun -= dt; dx = 0; }
-    if (this.grab != null) { if (!can || this.K.busy(this.T)) this.grab = null; else { const i = this.grab, s = this.T.sliders[i]; this.gacc += dx * 30 * dt; const st = Math.trunc(this.gacc);
+    if (this.grab != null && this.grabPi === this.ai) { if (!can || this.K.busy(this.T)) this.grab = null; else { const i = this.grab, s = this.T.sliders[i]; this.gacc += dx * 30 * dt; const st = Math.trunc(this.gacc);
       if (st) { this.gacc -= st; this.T.vals[i] = clamp(this.T.vals[i] + st, s.min, s.max); this.T.mirrors[i].phi = this.T.vals[i]; this.T.beam = null; UI.syncSlider(i); SFX.tick(); } if (dx) this.setRobot("scan", .2); dx = 0; } }
-    if (this.charge) dx = 0;
+    if (this.charge && this.charge.pi === this.ai) dx = 0;
     const target = dx * 420, acc = (dx ? 2600 : 3400) * dt;
     b.vx += clamp(target - b.vx, -acc, acc); b.moving = Math.abs(b.vx) > 40 && !b.air; if (Math.abs(b.vx) > 20) b.dir = b.vx > 0 ? 1 : -1;
-    b.x = clamp(b.x + b.vx * dt, 90, 1510); if (b.x <= 90 || b.x >= 1510) b.vx = 0;
+    b.x = clamp(b.x + b.vx * dt, 90, this.WW - 90); if (b.x <= 90 || b.x >= this.WW - 90) b.vx = 0;
     if (this.keys.j && b.air) { this.jbuf = .16; this.keys.j = 0; } if (this.jbuf > 0) { this.jbuf -= dt; if (!b.air) { this.keys.j = 1; this.jbuf = 0; } }
-    if (this.keys.j) { if (can && !b.air) { b.air = true; b.vy = 1000; b.sq = -.12; SFX.tone(420, .2, "square", .04, 0, 780); } this.keys.j = 0; }
-    if (b.air) { b.vy -= 1900 * dt; b.jh += b.vy * dt; if (b.jh <= 0) { b.jh = 0; b.air = false; b.vy = 0; b.sq = .14; SFX.tone(110, .08, "sine", .05); } }
+    if (this.keys.j) { if (can && !b.air) { b.air = true; b.vy = 1000; b.sq = -.12; if (this.ai === this.me) SFX.tone(420, .2, "square", .04, 0, 780); } this.keys.j = 0; }
+    if (b.air) { b.vy -= 1900 * dt; b.jh += b.vy * dt; if (b.jh <= 0) { b.jh = 0; b.air = false; b.vy = 0; b.sq = .14; if (this.ai === this.me) SFX.tone(110, .08, "sine", .05); } }
     b.sq += (0 - b.sq) * Math.min(1, dt * 12);
     const gy0 = this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy;
     if (can) { this.collect(b.x, gy0 - 105 - b.jh, 95);
-      const fr = this.frag; if (fr && !fr.got && Math.hypot(fr.x - b.x, fr.y - (gy0 - 105 - b.jh)) < 90) { fr.got = true; Save.d.frags[fr.key] = 1; Save.save(); SFX.law(); this.boom(fr.x, fr.y, ["#7FE8FF", "#FFFFFF", "#FFC83D", "#B06BFF"], 40, 420); this.say("frag", true);
+      const fr = this.frag; if (fr && !fr.got && Math.hypot(fr.x - b.x, fr.y - (gy0 - 105 - b.jh)) < 90) { fr.got = true; if (!this.team) { Save.d.frags[fr.key] = 1; Save.save(); } SFX.law(); this.boom(fr.x, fr.y, ["#7FE8FF", "#FFFFFF", "#FFC83D", "#B06BFF"], 40, 420); this.say("frag", true);
         const wi = this.wi, n = fragsOf(wi); UI.toast(n >= 3 ? L(`💎 ${AR(3)}/${AR(3)}! فتحتِ إكسسوارًا نادرًا لذرّة: ${ACCS.find(a => a.w === wi).ar} ${ACCS.find(a => a.w === wi).e}. البسيه من «الحساب».`, `💎 3/3! You unlocked a rare accessory for Zarra: ${ACCS.find(a => a.w === wi).en} ${ACCS.find(a => a.w === wi).e}. Wear it from Profile.`) : L(`💎 شظية ذاكرة ${AR(n)}/${AR(3)} في هذا العالم`, `💎 Memory shard ${n}/3 in this world`)); } }
-    const hz = this.hz; if (hz) { const [a, z] = this.K.hz, sp = hz.kind === "spark" ? 210 : 165; if ((this.grab != null || this.charge || this.drag) && Math.abs(hz.x - b.x) < 260) hz.dir = hz.x > b.x ? 1 : -1; hz.x += hz.dir * sp * dt; hz.spin += hz.dir * dt * 6; if (hz.x < a) { hz.x = a; hz.dir = 1; } if (hz.x > z) { hz.x = z; hz.dir = -1; }
-      if (can && !this.charge && this.grab == null && !this.drag && this.stun <= 0 && !this.K.busy(this.T) && Math.abs(hz.x - b.x) < 78 && b.jh < 75) { const away = b.x >= hz.x ? 1 : -1; b.vx = away * 950; b.air = true; b.vy = 560; this.stun = .55; this.shake = 9; this.grab = null;
+    const hz = this.hz; if (hz) { const mine = (this.grab != null && this.grabPi === this.ai) || (this.charge && this.charge.pi === this.ai) || (this.drag && this.ai === this.me);
+      if (can && !mine && this.stun <= 0 && !this.K.busy(this.T) && Math.abs(hz.x - b.x) < 78 && b.jh < 75) { const away = b.x >= hz.x ? 1 : -1; b.vx = away * 950; b.air = true; b.vy = 560; this.stun = .55; if (this.ai === this.me) this.shake = 9;
         this.setRobot("fail", .7); SFX.bad(); this.say("ouch", true); this.boom(b.x - away * 40, gy0 - 60, hz.kind === "spark" ? ["#7FE8FF", "#fff"] : ["#e9c48a", "#a07a4a"], 14, 260); } }
-    if (b.moving && Math.floor(this.t * 5) !== this._st) { this._st = Math.floor(this.t * 5); SFX.tone(140, .05, "square", .012); }
+    if (b.moving && this.ai === this.me && Math.floor(this.t * 5) !== this._st) { this._st = Math.floor(this.t * 5); SFX.tone(140, .05, "square", .012); }
   },
   draw(c) {
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H); const w = this.w; if (!w || !this.T) { if (typeof Menu !== "undefined") Menu.draw(c, this.t); return; }
     if (this.shake > 0) c.translate((Math.random() - .5) * this.shake, (Math.random() - .5) * this.shake);
-    { const off = clamp((this.rb.x - 800) * .05, -40, 40); c.drawImage(IMG["bg" + w.id], -48 - off, -27, W * 1.06, H * 1.06); }
-    if (w.gt) for (let x = 0; x < W; x += 600) c.drawImage(IMG[w.gt], x, GY, 600, 220);
+    c.translate(-Math.round(this.camX), 0);
+    { const off = clamp((this.players[this.me].rb.x - 800) * .05, -40, 40), bg = IMG["bg" + w.id]; c.drawImage(bg, -48 - off, -27, W * 1.06, H * 1.06);
+      if (this.WW > W) { c.save(); c.translate(-48 - off + W * 1.06 * 2, -27); c.scale(-1, 1); c.drawImage(bg, 0, 0, W * 1.06, H * 1.06); c.restore(); } }
+    if (w.gt) for (let x = 0; x < this.WW; x += 600) c.drawImage(IMG[w.gt], x, GY, 600, 220);
     this.K.draw(c, this.T, this.phase);
     this.drawWorldBits(c); if (this.boss) Boss.draw(c);
     this.cells.forEach((p, i) => { if (!p.got) { const bob = Math.sin(this.t * 3 + i) * 6; c.drawImage(IMG.pickup, p.x - 38, p.y - 45 + bob, 76, 90); } });
     this.parts.forEach(p => { c.globalAlpha = Math.max(0, 1 - p.t / p.life); c.fillStyle = p.col; c.beginPath(); c.arc(p.x, p.y, p.r, 0, 7); c.fill(); }); c.globalAlpha = 1;
-    this.drawRobot(c); if (this.K.over) this.K.over(c, this.T); if (this.boss) Boss.drawShots(c); this.drawBubble(c);
+    this.each((p, i) => { if (i !== this.me) this.drawRobot(c); }); this.ai = this.me; this.drawRobot(c); if (this.K.over) this.K.over(c, this.T); if (this.boss) Boss.drawShots(c); this.drawBubble(c);
     this.fx.forEach(f => { c.save(); c.globalAlpha = 1 - f.t / 1.2; c.fillStyle = f.col; c.font = "800 44px Cairo"; c.textAlign = "center"; c.fillText(f.txt, f.x, f.y - f.t * 60); c.restore(); });
   },
   drawBubble(c) {
-    const b = this.bubble; if (!b) return; const a = Math.min(1, b.t * 6, (b.dur - b.t) * 4); if (a <= 0) return;
+    const b = this.bubble; if (!b) return; const keep = this.ai; this.ai = this.players[b.pi] ? b.pi : this.me; try { this.drawBubble2(c, b); } finally { this.ai = keep; } },
+  drawBubble2(c, b) { const a = Math.min(1, b.t * 6, (b.dur - b.t) * 4); if (a <= 0) return;
     c.save(); c.globalAlpha = a; c.font = "700 27px Cairo"; c.direction = LANG === "en" ? "ltr" : "rtl"; c.textAlign = "center";
     const words = b.txt.split(" "), lines = []; let cur = ""; words.forEach(w => { const t = cur ? cur + " " + w : w; if (c.measureText(t).width > 380 && cur) { lines.push(cur); cur = w; } else cur = t; }); lines.push(cur);
-    const wd = Math.max(...lines.map(l => c.measureText(l).width)) + 44, ht = lines.length * 38 + 24, x = clamp(this.rb.x, wd / 2 + 20, W - wd / 2 - 20), y = this.robotY() - 250 - ht - (1 - Math.min(1, b.t * 6)) * 14;
+    const wd = Math.max(...lines.map(l => c.measureText(l).width)) + 44, ht = lines.length * 38 + 24, x = clamp(this.rb.x, this.camX + wd / 2 + 20, this.camX + W - wd / 2 - 20), y = this.robotY() - 250 - ht - (1 - Math.min(1, b.t * 6)) * 14;
     c.fillStyle = "#fff"; c.strokeStyle = "#1c2250"; c.lineWidth = 4; c.beginPath(); c.roundRect(x - wd / 2, y, wd, ht, 22); c.fill(); c.stroke();
     c.beginPath(); c.moveTo(clamp(this.rb.x, x - wd / 2 + 30, x + wd / 2 - 30) - 14, y + ht - 2); c.lineTo(clamp(this.rb.x, x - wd / 2 + 30, x + wd / 2 - 30), y + ht + 22); c.lineTo(clamp(this.rb.x, x - wd / 2 + 30, x + wd / 2 - 30) + 14, y + ht - 2); c.fill();
     c.fillStyle = "#1c2250"; lines.forEach((l, i) => c.fillText(l, x, y + 44 + i * 38)); c.restore();
   },
   drawRobot(c) {
     let s = this.robot.s; if (s === "idle" && this.energy <= 3 && this.phase !== "done") s = "low"; if (s === "idle" || s === "low") { if (this.rb.air) s = "jump"; else if (this.rb.moving) s = "roll"; } if (this.phase === "measure" && s === "idle" && this.K.busy(this.T)) s = "scan";
-    if (this.phase === "deduce") s = "think"; const R = this.K.robot;
-    Robo.draw(c, myLook(), s, Robo.frame(s, this.t), this.rb.x, (this.w.gt ? Math.min(R.gy, GY) : R.gy) - this.rb.jh, 300, this.rb.dir < 0, this.rb.sq, this.t);
+    if (this.phase === "deduce") s = "think"; const R = this.K.robot, P = this.P;
+    if (this.team) { c.save(); c.font = "800 24px Cairo"; c.textAlign = "center"; c.direction = "rtl"; const nm = P.name || "?", tw = c.measureText(nm).width + 26, ty = this.robotY() - 225; c.fillStyle = this.ai === this.me ? "#FFC83Dee" : "#0b0f2bcc"; c.beginPath(); c.roundRect(this.rb.x - tw / 2, ty - 26, tw, 36, 14); c.fill(); c.fillStyle = this.ai === this.me ? "#2a1a00" : "#fff"; c.fillText(nm, this.rb.x, ty); c.restore(); }
+    Robo.draw(c, P.look || myLook(), s, Robo.frame(s, this.t), this.rb.x, (this.w.gt ? Math.min(R.gy, GY) : R.gy) - this.rb.jh, 300, this.rb.dir < 0, this.rb.sq, this.t);
   }
 };
