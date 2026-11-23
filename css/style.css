@@ -154,3 +154,6 @@ input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;bac
 .sb.boss{border-color:#ff4f5e;background:radial-gradient(circle at 50% 40%,#3a1250dd,#141a42dd);box-shadow:0 0 26px #ff4f5e66;grid-template-rows:110px 46px 40px}
 .sb.boss .bossic{width:115px;height:110px}.sb.boss:not(.lock){animation:pop .45s backwards,bossglow 1.6s ease-in-out infinite alternate}
 @keyframes bossglow{from{box-shadow:0 0 14px #ff4f5e55}to{box-shadow:0 0 40px #ff4f5ecc}}
+#panel{width:410px}#panel th.pf,#panel td.pf{color:#5CE08A;background:#5CE08A14}
+#panel .pfn{font-size:18px;color:#5CE08A;margin-top:6px;text-align:center}
+.solv{font-size:24px;line-height:1.6;background:#5CE08A1c;border:2px solid #5CE08A88;border-radius:16px;padding:8px 14px;margin:4px 0 10px;color:#d9ffe4}

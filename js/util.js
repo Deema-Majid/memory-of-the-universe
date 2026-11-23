@@ -9,6 +9,8 @@ const rnd = a => a[Math.floor(RNG() * a.length)];
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(RNG() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 let LANG = "ar";
 const L = (a, e) => LANG === "en" ? e : a;
+const AR2 = n => { const v = Math.round(n * 100) / 100, s = String(v); return LANG === "en" ? s : s.replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]).replace(".", "٫"); };
+const FX = s => LANG === "en" ? s : "\u2066" + s.replace(/([×÷=≈()√+−·:])/g, "\u200E$1\u200E").replace(/ /g, "\u200E \u200E") + "\u2069";
 const AR = n => { if (LANG === "en") return String(Math.round(n * 10) / 10); const s = (Math.round(n * 10) / 10).toString(); return s.replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]).replace(".", "٫"); };
 const ease = t => t * t * (3 - 2 * t);
 
@@ -26,7 +28,7 @@ function loadImages() {
   const jobs = [];
   const add = (key, src) => jobs.push(new Promise(res => { const i = new Image(); i.onload = () => { IMG[key] = i; res(); }; i.onerror = () => { console.warn("missing", src); res(); }; i.src = src; }));
   for (const k in IMG_LIST) add(k, `assets/img/${IMG_LIST[k]}.png`);
-  for (const k in ROBOT) for (let n = 1; n <= ROBOT[k]; n++) add(`r_${k}_${n}`, `assets/robot/${k}_${String(n).padStart(2, "0")}.png`);
+  for (const k in ROBOT) for (let n = 1; n <= ROBOT[k]; n++) add(`r_${k}_${n}`, `assets/robot/${k === "push" ? "pushc" : k}_${String(n).padStart(2, "0")}.png`);
   return Promise.all(jobs);
 }
 
