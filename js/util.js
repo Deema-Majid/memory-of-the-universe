@@ -60,13 +60,16 @@ const SFX = {
   bad() { this.tone(200, .25, "sawtooth", .05, 0, 120); this.tone(150, .3, "sawtooth", .05, .13, 90); },
   win() { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => this.tone(f, .4, "sine", .09, i * .12)); [262, 330, 392].forEach(f => this.tone(f, 1.2, "triangle", .05, .5)); },
   crash() { this.noise(.6, .12, 900, 80); this.tone(70, .5, "sawtooth", .07, 0, 35); },
+  roar() { this.noise(1.1, .14, 300, 60); this.tone(120, 1, "sawtooth", .07, 0, 45); this.tone(180, .9, "square", .03, .05, 70); },
+  charge() { this.tone(160, 1.05, "sawtooth", .045, 0, 900); },
+  zap() { this.tone(900, .35, "square", .05, 0, 120); this.noise(.3, .06, 2500, 400); },
   sizzle() { this.noise(.8, .05, 4000, 1500); },
   lose() { [392, 330, 262, 196].forEach((f, i) => this.tone(f, .4, "triangle", .08, i * .2)); },
   /* موسيقى خلفية هادئة تتغير حسب العالم */
-  SC: { menu: [0, 3, 7, 10, 14, 12], 0: [0, 2, 4, 7, 9, 12], 1: [0, 3, 5, 7, 10, 12], 2: [0, 2, 3, 7, 8, 12], 3: [0, 2, 5, 7, 9, 14] },
+  SC: { boss: [0, 1, 3, 7, 8, 12], menu: [0, 3, 7, 10, 14, 12], 0: [0, 2, 4, 7, 9, 12], 1: [0, 3, 5, 7, 10, 12], 2: [0, 2, 3, 7, 8, 12], 3: [0, 2, 5, 7, 9, 14] },
   music(key) {
     this.stopMusic(); this.key = key; if (!this.on) return; const c = this.get(); if (!c) return;
-    const root = { menu: 220, 0: 196, 1: 233, 2: 175, 3: 208 }[key], sc = this.SC[key], bpm = key === "menu" ? 70 : 84, step = 60 / bpm / 2;
+    const root = { menu: 220, 0: 196, 1: 233, 2: 175, 3: 208, boss: 147 }[key], sc = this.SC[key], bpm = key === "menu" ? 70 : key === "boss" ? 132 : 84, step = 60 / bpm / 2;
     let i = 0, next = c.currentTime + .1; const mus = this.mus = { alive: true };
     const hz = k => root * Math.pow(2, k / 12);
     const sched = () => { if (!mus.alive) return; while (next < c.currentTime + .8) {

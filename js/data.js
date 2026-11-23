@@ -7,21 +7,22 @@ const LAWS = {
 const WORLDS = [
   { id: 1, name: "الثِقل", sub: "القوة والتسارع", law: "force", bg: "bg1", gt: "gt1", color: "#E8A33C",
     intro: "في عالم الثِقل تتحرك الأشياء بقدر ما تُدفَع. اكتشفي كم تزن الصناديق من دون أن تحمليها." ,
-    stages: [{ tasks: [{ kind: "force", level: 1 }] }, { tasks: [{ kind: "force", level: 2 }] }, { tasks: [{ kind: "force", level: 3 }] }] },
+    stages: [{ tasks: [{ kind: "force", level: 1 }] }, { tasks: [{ kind: "force", level: 2 }] }, { tasks: [{ kind: "force", level: 3 }] }, { boss: true, tasks: [{ kind: "force", level: 1 }, { kind: "force", level: 2 }, { kind: "force", level: 3 }] }] },
   { id: 2, name: "المرايا", sub: "انعكاس الضوء", law: "light", bg: "bg2", gt: "gt2", color: "#4CC3D9",
     intro: "في عالم المرايا يسير الضوء في خطوط مستقيمة ويرتدّ عند المرايا. وجّهي الشعاع نحو المستشعر.",
-    stages: [{ tasks: [{ kind: "light", level: 1 }] }, { tasks: [{ kind: "light", level: 2 }] }, { tasks: [{ kind: "light", level: 3 }] }] },
+    stages: [{ tasks: [{ kind: "light", level: 1 }] }, { tasks: [{ kind: "light", level: 2 }] }, { tasks: [{ kind: "light", level: 3 }] }, { boss: true, tasks: [{ kind: "light", level: 1 }, { kind: "light", level: 1 }, { kind: "light", level: 2 }] }] },
   { id: 3, name: "المقلاع", sub: "الجاذبية والمدارات", law: "gravity", bg: "bg3", gt: null, color: "#9B6BFF",
     intro: "في عالم المقلاع تنحني المسارات حول الكواكب. أطلقي المسبار بالسرعة الصحيحة ليعبر الحلقة.",
-    stages: [{ tasks: [{ kind: "gravity", level: 1 }] }, { tasks: [{ kind: "gravity", level: 2 }] }, { tasks: [{ kind: "gravity", level: 3 }] }] },
+    stages: [{ tasks: [{ kind: "gravity", level: 1 }] }, { tasks: [{ kind: "gravity", level: 2 }] }, { tasks: [{ kind: "gravity", level: 3 }] }, { boss: true, tasks: [{ kind: "gravity", level: 2 }, { kind: "gravity", level: 2 }, { kind: "gravity", level: 3 }] }] },
   { id: 4, name: "الذاكرة", sub: "كل القوانين معًا", law: "memory", bg: "bg4", gt: "gt4", color: "#FF8A5C",
     intro: "هنا تلتقي القوانين كلها. في كل مهمة اختاري القانون المناسب أولًا، ثم قيسي واستنتجي وتصرّفي.",
     stages: [{ tasks: [{ kind: "force", level: 2 }, { kind: "light", level: 1 }] },
              { tasks: [{ kind: "light", level: 2 }, { kind: "gravity", level: 2 }] },
-             { tasks: [{ kind: "gravity", level: 3 }, { kind: "force", level: 3 }, { kind: "light", level: 3 }] }] }
+             { tasks: [{ kind: "gravity", level: 3 }, { kind: "force", level: 3 }, { kind: "light", level: 3 }] },
+             { boss: true, tasks: [{ kind: "force", level: 3 }, { kind: "light", level: 2 }, { kind: "gravity", level: 3 }] }] }
 ];
 const STORY = [
-  { img: "story_1", t: "ذاكرة الكون تحفظ قوانينه كلها… لكنها تشتّتت في أربعة عوالم." },
+  { img: "story_1", t: "ذاكرة الكون تحفظ قوانينه كلها… حتى جاء «المُشتِّت» فحطّمها إلى أربعة عوالم." },
   { img: "story_2", t: "ذرّة، روبوت صغير، وصل ليستعيدها قطعةً قطعة." },
   { img: "story_3", t: "لا يملك إلا طاقته المحدودة… وعقلًا يقيس ويستنتج." },
   { img: "story_4", t: "قيسي، استنتجي، ثم تصرّفي. ولا تهدري الطاقة!" }
@@ -37,7 +38,7 @@ const EN = {
     { name: "Mirrors", sub: "Reflection of light", intro: "In Mirrors world light travels in straight lines and bounces off mirrors. Aim the beam at the sensor." },
     { name: "Slingshot", sub: "Gravity & orbits", intro: "In Slingshot world paths bend around planets. Launch the probe at the right speed to pass through the ring." },
     { name: "Memory", sub: "All laws together", intro: "Here all the laws meet. In each task pick the right law first, then measure, deduce and act." }],
-  story: ["The Memory of the Universe holds all its laws… but it shattered into four worlds.", "Zarra, a little robot, arrived to restore it piece by piece.", "It has only its limited energy… and a mind that measures and deduces.", "Measure, deduce, then act. And don't waste energy!"]
+  story: ["The Memory of the Universe held all its laws… until the Scatterer came and shattered it into four worlds.", "Zarra, a little robot, arrived to restore it piece by piece.", "It has only its limited energy… and a mind that measures and deduces.", "Measure, deduce, then act. And don't waste energy!"]
 };
 const wt = (w, f) => LANG === "en" ? EN.worlds[w.id - 1][f] : w[f];
 const lw = (k, f) => LANG === "en" ? EN.laws[k][f] : LAWS[k][f];
@@ -57,6 +58,9 @@ const SAY = {
   low: [["بطاريتي تصفّر… أبغى شحن!", "My battery's beeping… I need a charge!"]],
   collect: [["يمّي! طاقة طازجة ⚡", "Yum! Fresh energy ⚡"], ["+٣… أحس إني أقدر أطير!", "+3… I feel like I could fly!"]],
   idle: [["أنا هنا… أنتظر عبقريتك.", "Still here… waiting for your genius."], ["لو تعبتِ، زر المصباح فيه تلميح 💡", "Stuck? The bulb button has a hint 💡"], ["أفكر في الفيزياء… وفي البطاريات.", "Thinking about physics… and batteries."]],
+  boss: [["هذا هو المُشتِّت! 😨 نحن نعرف القانون، لنضربه بالفيزياء!", "That's the Scatterer! 😨 We know the law, let's hit it with physics!"], ["لا تخافي… أقصد، أنا خايف شوي. يلا!", "Don't be scared… okay, I'm a bit scared. Let's go!"]],
+  bossnext: [["غضب! ركّزي، القيم تغيّرت.", "It's angry! Focus, the values changed."], ["ضربة ثانية وننتهي منه!", "One more hit and it's done!"]],
+  incoming: [["انتبهي! اقفزي ↑", "Watch out! Jump ↑"], ["كرة ظلام قادمة!", "Dark orb incoming!"]],
   grab: [["أمسكتها! دوّريها بـ ← →", "Got it! Rotate with ← →"]],
   ouch: [["آي! هذا الشي يدفّ!", "Ouch! That thing pushes!"], ["اقفزي فوقه المرة الجاية ↑", "Jump over it next time ↑"], ["دوّخني… 😵", "I'm dizzy… 😵"]],
   frag: [["شظية ذاكرة! 💎 الكون يتذكّر أكثر.", "A memory shard! 💎 The universe remembers more."], ["وصلناها! القفزة كانت تستاهل.", "Got it! That jump was worth it."]],
@@ -77,4 +81,12 @@ const BOOK = {
   memory: { icon: "law_memory", f: "قِس ← استنتج ← تصرّف",
     ar: { t: "طريقة العلماء", d: "العلم ليس حفظًا: قياس، ثم استنتاج، ثم تجربة تثبت أو تنفي. هذا ما فعلتِه في كل مرحلة.", ex: ["🔬 هكذا اكتشف نيوتن وغاليليو قوانينهما: بتجارب متكررة لا بالتخمين.", "🧠 كل مرة أخطأتِ وأعدتِ النظر في الجدول، كنتِ تفكرين كعالِمة."] },
     en: { t: "The Scientist's Way", d: "Science isn't memorising: measure, deduce, then test. That's what you did in every stage.", ex: ["🔬 That's how Newton and Galileo found their laws: by repeated experiments, not guesses.", "🧠 Every time you got it wrong and looked at the table again, you were thinking like a scientist."] } }
+};
+
+const BOSS_TXT = {
+  name: ["المُشتِّت", "The Scatterer"],
+  intro: ["المُشتِّت هنا! هو من حطّم ذاكرة الكون. اضربيه ٣ ضربات باستخدام القانون الذي تعلّمتِه، ولا يوجد قياس هذه المرة: أنتِ تعرفين القانون! وكل بضع ثوانٍ يطلق كرة ظلام، فاقفزي ↑ أو تحرّكي لتتفاديها، فهي تسرق خلية طاقة.", "The Scatterer is here! It shattered the Memory of the Universe. Hit it 3 times using the law you learned. No measuring this time: you know the law! Every few seconds it fires a dark orb: jump ↑ or move to dodge it, or it steals an energy cell."],
+  hint: { force: ["كتلة الصندوق مكتوبة عليه، والتسارع المطلوب مكتوب في الأعلى. استعملي F = m × a.", "The crate's mass is written on it and the needed acceleration is shown at the top. Use F = m × a."],
+    light: ["زاوية الانعكاس = زاوية السقوط. الخط المتقطع يريك أين سيذهب الشعاع بعد المرآة الأولى. وجّهيه نحو عين الوحش.", "Angle of reflection = angle of incidence. The dashed line shows where the beam goes after the first mirror. Aim it at the monster's eye."],
+    gravity: ["Δθ = 20 × M ÷ v². كتلة الكوكب M مكتوبة عليه. إذن v = √(20 × M ÷ Δθ).", "Δθ = 20 × M ÷ v². The planet's mass M is written on it. So v = √(20 × M ÷ Δθ)."] }
 };

@@ -76,13 +76,14 @@ KINDS.force = {
   busy: T => !!T.anim,
   over(c, T) {
     c.save(); c.translate(T.cx, GY - 68); c.rotate(T.rot || 0); c.drawImage(IMG.crate1, -80, -80, 160, 160); c.restore();
+    if (Eng.boss && !T.anim) { c.save(); c.fillStyle = "#0b0f2bdd"; c.beginPath(); c.roundRect(T.cx - 78, GY - 205, 156, 44, 14); c.fill(); c.fillStyle = "#FFE08A"; c.font = "800 28px Cairo"; c.textAlign = "center"; c.direction = LANG === "en" ? "ltr" : "rtl"; c.fillText(L(`m = ${AR(T.m)} كغ`, `m = ${AR(T.m)} kg`), T.cx, GY - 173); c.restore(); }
     const ch = Eng.charge; if (ch) { const f = (ch.v - 1) / 9, x = T.cx - 22, y = GY - 420; c.save(); c.fillStyle = "#0b0f2bdd"; c.strokeStyle = "#fff"; c.lineWidth = 4; c.beginPath(); c.roundRect(x, y, 44, 220, 14); c.fill(); c.stroke();
       const g = c.createLinearGradient(0, y + 220, 0, y); g.addColorStop(0, "#5CE08A"); g.addColorStop(.6, "#FFC83D"); g.addColorStop(1, "#ff6b6b"); c.fillStyle = g; c.beginPath(); c.roundRect(x + 6, y + 214 - 208 * f, 32, 208 * f, 9); c.fill();
       c.fillStyle = "#FFE08A"; c.font = "800 38px Cairo"; c.textAlign = "center"; c.fillText(`F = ${AR(Math.round(ch.v * 2) / 2)}`, T.cx, y - 14); c.restore(); }
   },
   draw(c, T, ph) {
     const gi = T.open ? IMG.gateO : IMG.gateC;
-    if (ph === "act" || T.open) c.drawImage(gi, T.gateX - 100, GY - 260 + 6, 200, 260);
+    if ((ph === "act" || T.open) && !Eng.boss) c.drawImage(gi, T.gateX - 100, GY - 260 + 6, 200, 260);
 
     if (ph === "act") { c.strokeStyle = "rgba(255,200,61,.6)"; c.setLineDash([10, 10]); c.lineWidth = 3; c.beginPath(); c.moveTo(T.gateX, GY + 28); c.lineTo(T.x0, GY + 28); c.stroke(); c.setLineDash([]); }
   },
@@ -138,7 +139,10 @@ KINDS.light = {
     if (act) ms.forEach((m, i) => m.phi = T.vals[i]); else T.mirrors[0].phi = T.vals[0];
     const E = T.E; c.drawImage(IMG.emitter, E.x - 70, E.y - 60, 130, 130);
     T.walls.forEach(w => { if (act) c.drawImage(IMG.wall, w.x1 - 60, w.y1 - 10, 120, w.y2 - w.y1 + 12); });
-    if (act) c.drawImage(T.hit ? IMG.sensorOn : IMG.sensorOff, T.sensor.x - 56, T.sensor.y - 56, 112, 112);
+    if (act && !Eng.boss) c.drawImage(T.hit ? IMG.sensorOn : IMG.sensorOff, T.sensor.x - 56, T.sensor.y - 56, 112, 112);
+    if (act && Eng.boss && !T.anim) { const m0 = T.mirrors[0], r0 = trace(T.E, [m0], []); if (r0.hits.length) { const A = r0.pts[1], B = r0.pts[2], d = Math.hypot(B.x - A.x, B.y - A.y) || 1, n = { x: Math.sin(rad(m0.phi)), y: Math.cos(rad(m0.phi)) };
+      c.save(); c.setLineDash([12, 10]); c.lineDashOffset = -Eng.t * 40; c.lineWidth = 5; c.strokeStyle = "rgba(255,224,138,.85)"; c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(A.x + (B.x - A.x) / d * 230, A.y + (B.y - A.y) / d * 230); c.stroke();
+      c.strokeStyle = "rgba(255,255,255,.35)"; c.lineWidth = 3; c.beginPath(); c.moveTo(A.x - n.x * 90, A.y - n.y * 90); c.lineTo(A.x + n.x * 90, A.y + n.y * 90); c.stroke(); c.restore(); } }
     if (T.beam && T.beamT > 0) {
       const pts = T.beam; let total = 0; for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
       let left = total * T.beamT; c.save(); c.lineCap = "round";
@@ -202,7 +206,8 @@ KINDS.gravity = {
   draw(c, T, ph) {
     const act = ph === "act"; c.drawImage(IMG.planetU, 750 - 130, 240 - 130, 260, 260);
     c.save(); c.strokeStyle = "rgba(255,255,255,.18)"; c.setLineDash([8, 14]); c.lineWidth = 3; c.beginPath(); c.moveTo(330, 650); c.lineTo(500, 650); c.stroke(); c.restore();
-    if (act) { T.ast.forEach(a => c.drawImage(IMG[a.k], a.x - a.s, a.y - a.s * .9, a.s * 2, a.s * 1.8)); c.drawImage(IMG.ring, T.ring.x - 70, T.ring.y - 70, 140, 140); }
+    if (act) { T.ast.forEach(a => c.drawImage(IMG[a.k], a.x - a.s, a.y - a.s * .9, a.s * 2, a.s * 1.8)); if (!Eng.boss) c.drawImage(IMG.ring, T.ring.x - 70, T.ring.y - 70, 140, 140); }
+    if (Eng.boss) { c.save(); c.fillStyle = "#0b0f2bdd"; c.beginPath(); c.roundRect(750 - 70, 240 - 26, 140, 52, 16); c.fill(); c.fillStyle = "#FFE08A"; c.font = "800 32px Cairo"; c.textAlign = "center"; c.fillText(`M = ${AR(T.M)}`, 750, 252); c.restore(); }
     let pos = { x: 330, y: 650 }, ang = 0; const dg = Eng.drag;
     c.save(); c.lineCap = "round"; c.strokeStyle = "#6b4a2b"; c.lineWidth = 16; c.beginPath(); c.moveTo(320, 820); c.lineTo(320, 730); c.lineTo(345, 600); c.moveTo(320, 730); c.lineTo(345, 700); c.stroke(); c.restore();
     if (dg) { const dx = dg.x - 330, dy = dg.y - 650, d = Math.hypot(dx, dy), k = Math.min(1, 220 / (d || 1)); pos = { x: 330 + dx * k, y: 650 + dy * k }; ang = Math.atan2(-dy, -dx);
@@ -222,6 +227,76 @@ KINDS.gravity = {
   robot: { x: 150, gy: 730 }, terminal: 1260, hz: [480, 1120], frags: [[470, 400], [1000, 390], [1180, 400]]
 };
 
+
+/* ============ الوحش «المُشتِّت» ============ */
+const BOSS_COL = ["#FF9A3C", "#3CE0FF", "#B06BFF", "#FF3C6B"];
+const Boss = {
+  on: false, hurt: 0, die: 0, wind: 0, timer: 0, shots: [], every: 9, col: "#B06BFF",
+  start(wi) { this.on = true; this.hurt = 0; this.die = 0; this.wind = 0; this.shots = []; this.timer = 0; this.every = [8, 12, 9, 9][wi]; this.col = BOSS_COL[wi]; },
+  stop() { this.on = false; this.shots = []; this.wind = 0; },
+  hp() { return Eng.tasks.length - Eng.ti - (this.die > 0 || this.hurtDone ? 1 : 0); },
+  prep(T, sc) {
+    this.timer = 0; this.wind = 0; this.shots = []; this.hurtDone = false;
+    if (sc === "force") { const pairs = []; [2, 3, 4, 5].forEach(m => [1, 1.5, 2].forEach(a => { if (m * a <= 10) pairs.push([m, a]); }));
+      const [m, a] = rnd(pairs); T.m = m; T.aT = a; T.gateX = T.x0 - 400 * a;
+      T.goal = L(`ليصل الصندوق إلى الوحش يحتاج تسارع a = ${AR(a)} م/ث² · كتلة الصندوق m = ${AR(m)} كغ`, `To reach the monster the crate needs a = ${AR(a)} m/s² · crate mass m = ${AR(m)} kg`); }
+    if (sc === "light") T.goal = L("وجّهي الشعاع إلى عين الوحش!", "Aim the beam at the monster's eye!");
+    if (sc === "gravity") T.goal = L(`Δθ = 20 × M ÷ v² · كتلة الكوكب M = ${AR(T.M)} · المطلوب Δθ ≈ ${AR(T.dthT)}°`, `Δθ = 20 × M ÷ v² · planet mass M = ${AR(T.M)} · needed Δθ ≈ ${AR(T.dthT)}°`);
+  },
+  pos() { const T = Eng.T, sc = Eng.K.scene; if (sc === "force") return { x: T.gateX, y: GY - 115, s: 92 }; if (sc === "light") return { x: T.sensor.x, y: T.sensor.y, s: 78 }; return { x: T.ring.x, y: T.ring.y, s: 84 }; },
+  update(dt) {
+    if (!this.on || !Eng.T) return;
+    this.hurt = Math.max(0, this.hurt - dt * 2.2); if (this.die > 0) this.die = Math.min(1, this.die + dt * .9);
+    const p = this.pos(), active = Eng.phase === "act" && !Eng.locked && !Eng.K.busy(Eng.T) && !document.querySelector("#modal:not(.hidden)") && this.die === 0;
+    if (active) { if (this.wind > 0) { this.wind += dt; if (this.wind >= 1.1) { this.wind = 0; this.fire(p); } } else { this.timer += dt; if (this.timer >= this.every) { this.timer = 0; this.wind = .001; SFX.charge(); } } }
+    else if (this.wind > 0 && Eng.phase !== "act") this.wind = 0;
+    const rx = Eng.rb.x, ry = Eng.robotY() - 110;
+    this.shots.forEach(s => { s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt; if (Math.random() < .7) Eng.part(s.x, s.y, { col: this.col, vx: (Math.random() - .5) * 40, vy: (Math.random() - .5) * 40, g: 0, life: .45, r: 6 + Math.random() * 6 });
+      if (!s.dead && Math.hypot(s.x - rx, s.y - ry) < 72) { s.dead = true; Eng.boom(s.x, s.y, [this.col, "#2a0f45", "#fff"], 22, 320); Eng.shake = 12; Eng.setRobot("fail", .8); Eng.say("ouch", true); Eng.stun = .35; Eng.spend(1); UI.toast(L("أصابتك كرة الظلام! (−١ طاقة) اقفزي ↑ لتتفاديها.", "The dark orb hit you! (−1 energy) Jump ↑ to dodge it.")); } });
+    this.shots = this.shots.filter(s => !s.dead && s.t < 6 && s.x > -80 && s.x < 1680 && s.y > -80 && s.y < 980);
+  },
+  fire(p) { const rx = Eng.rb.x, ry = Eng.robotY() - 110, d = Math.hypot(rx - p.x, ry - p.y) || 1, sp = 560; this.shots.push({ x: p.x, y: p.y, vx: (rx - p.x) / d * sp, vy: (ry - p.y) / d * sp, t: 0 }); SFX.zap(); Eng.say("incoming"); },
+  hit() { this.hurt = 1; this.hurtDone = true; this.shots = []; this.wind = 0; const p = this.pos(); Eng.boom(p.x, p.y, [this.col, "#fff", "#FFE08A"], 50, 520); Eng.shake = 20; SFX.roar(); if (Eng.ti >= Eng.tasks.length - 1) { this.die = .001; } },
+  draw(c) {
+    if (!this.on || !Eng.T) return; const p = this.pos();
+    if (this.die >= 1) return;
+    if (this.die > 0 && Math.random() < .8) Eng.part(p.x + (Math.random() - .5) * p.s * 2, p.y + (Math.random() - .5) * p.s * 2, { col: rnd([this.col, "#2a0f45", "#FFE08A", "#fff"]), vx: (Math.random() - .5) * 300, vy: -100 - Math.random() * 300, g: 200, life: 1, r: 5 + Math.random() * 9 });
+    Boss.monster(c, p.x, p.y, p.s, this.col, { t: Eng.t, look: { x: Eng.rb.x, y: Eng.robotY() - 110 }, wind: Math.min(1, this.wind), hurt: this.hurt, die: this.die, hp: Math.max(0, this.hp()), max: Eng.tasks.length });
+  },
+  drawShots(c) { this.shots.forEach(s => { c.save(); const g = c.createRadialGradient(s.x, s.y, 0, s.x, s.y, 44); g.addColorStop(0, "#fff"); g.addColorStop(.25, this.col); g.addColorStop(.6, "rgba(42,15,69,.9)"); g.addColorStop(1, "rgba(42,15,69,0)"); c.fillStyle = g; c.beginPath(); c.arc(s.x, s.y, 44, 0, 7); c.fill(); c.restore(); }); },
+  monster(c, x, y, s, col, o) {
+    const t = o.t, k = 1 - (o.die || 0), sh = o.hurt ? (Math.random() - .5) * 18 * o.hurt : 0;
+    c.save(); c.translate(x + sh, y + Math.sin(t * 2.2) * s * .07); c.scale(k * (1 + (o.wind || 0) * .08), k * (1 + (o.wind || 0) * .08));
+    const au = c.createRadialGradient(0, 0, s * .4, 0, 0, s * 2); au.addColorStop(0, col + "88"); au.addColorStop(1, col + "00"); c.fillStyle = au; c.beginPath(); c.arc(0, 0, s * 2, 0, 7); c.fill();
+    for (let i = 0; i < 6; i++) { const a = Math.PI / 2 + (i - 2.5) * .42, sw = Math.sin(t * 3 + i) * s * .35; c.lineCap = "round";
+      const x1 = Math.cos(a) * s * .7, y1 = Math.sin(a) * s * .7, x2 = Math.cos(a) * s * 1.6 + sw, y2 = Math.sin(a) * s * 1.55;
+      c.strokeStyle = "#160826"; c.lineWidth = s * .2; c.beginPath(); c.moveTo(x1, y1); c.quadraticCurveTo((x1 + x2) / 2 - sw, (y1 + y2) / 2, x2, y2); c.stroke();
+      c.strokeStyle = col; c.globalAlpha = .55; c.lineWidth = s * .06; c.stroke(); c.globalAlpha = 1; }
+    const blob = () => { c.beginPath(); for (let i = 0; i <= 32; i++) { const a = i / 32 * Math.PI * 2, r = s * (1 + .07 * Math.sin(3 * a + t * 3) + .045 * Math.sin(5 * a - t * 2.3)); i ? c.lineTo(Math.cos(a) * r, Math.sin(a) * r) : c.moveTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); };
+    for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i - 2) * .38, h = s * (.55 + (i === 2 ? .35 : i % 2 ? .1 : .22)) + Math.sin(t * 4 + i) * s * .05;
+      c.save(); c.rotate(a + Math.PI / 2); c.fillStyle = col; c.strokeStyle = "#fff"; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-s * .13, -s * .82); c.lineTo(0, -s * .82 - h); c.lineTo(s * .13, -s * .82); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = "rgba(255,255,255,.45)"; c.beginPath(); c.moveTo(-s * .05, -s * .85); c.lineTo(0, -s * .82 - h * .8); c.lineTo(s * .02, -s * .85); c.fill(); c.restore(); }
+    const bg = c.createRadialGradient(-s * .25, -s * .3, s * .1, 0, 0, s * 1.1); bg.addColorStop(0, "#4a1d7a"); bg.addColorStop(.7, "#1f0a38"); bg.addColorStop(1, "#12061f"); blob(); c.fillStyle = bg; c.fill(); c.lineWidth = s * .06; c.strokeStyle = col; c.stroke();
+    for (let i = 0; i < 9; i++) { const a = i * 2.4 + t * .3, r = s * (.35 + (i % 3) * .18); c.fillStyle = "rgba(255,255,255," + (.25 + .25 * Math.sin(t * 3 + i)) + ")"; c.beginPath(); c.arc(Math.cos(a) * r, Math.sin(a) * r * .8 + s * .25, s * .025 + (i % 2) * 1.5, 0, 7); c.fill(); }
+    const ex = 0, ey = -s * .12, er = s * .42, lx = o.look.x - x, ly = o.look.y - y, ld = Math.hypot(lx, ly) || 1, blink = (t % 4.3) < .12 ? .15 : 1;
+    c.save(); c.translate(ex, ey); c.scale(1, blink); c.fillStyle = "#fff"; c.beginPath(); c.ellipse(0, 0, er, er * .9, 0, 0, 7); c.fill(); c.strokeStyle = "#12061f"; c.lineWidth = s * .05; c.stroke();
+    const ix = lx / ld * er * .38, iy = ly / ld * er * .32, ig = c.createRadialGradient(ix, iy, 0, ix, iy, er * .58); ig.addColorStop(0, "#fff8"); ig.addColorStop(.25, col); ig.addColorStop(1, "#2a0f45"); c.fillStyle = ig; c.beginPath(); c.arc(ix, iy, er * .56, 0, 7); c.fill();
+    c.fillStyle = "#0b0414"; c.beginPath(); c.ellipse(ix, iy, er * .13 * (1 + (o.wind || 0) * .8), er * .4, 0, 0, 7); c.fill(); c.fillStyle = "#fff"; c.beginPath(); c.arc(ix - er * .2, iy - er * .22, er * .1, 0, 7); c.fill(); c.restore();
+    c.strokeStyle = "#0b0414"; c.lineWidth = s * .13; c.lineCap = "round"; c.beginPath(); c.moveTo(-er * 1.05, ey - er * 1.05); c.lineTo(-er * .1, ey - er * .72); c.moveTo(er * 1.05, ey - er * 1.05); c.lineTo(er * .1, ey - er * .72); c.stroke();
+    const mo = s * (.1 + (o.wind || 0) * .3 + (o.hurt || 0) * .25), my = s * .52, mw = s * .62;
+    c.fillStyle = "#0b0414"; c.beginPath(); c.moveTo(-mw, my); c.quadraticCurveTo(0, my + mo * 2.2, mw, my); c.quadraticCurveTo(0, my + mo * .4, -mw, my); c.fill();
+    if ((o.wind || 0) > 0) { const mg = c.createRadialGradient(0, my + mo, 0, 0, my + mo, mw); mg.addColorStop(0, col); mg.addColorStop(1, col + "00"); c.fillStyle = mg; c.beginPath(); c.arc(0, my + mo, mw * .7, 0, 7); c.fill(); }
+    c.fillStyle = "#fff"; for (let i = 0; i < 6; i++) { const tx = -mw * .8 + i * mw * .32; c.beginPath(); c.moveTo(tx - s * .06, my + 2); c.lineTo(tx, my + s * .12 + mo * .3); c.lineTo(tx + s * .06, my + 2); c.fill(); }
+    for (let i = 0; i < 3; i++) { const a = t * 1.4 + i * 2.09, r = s * 1.38; c.save(); c.translate(Math.cos(a) * r, Math.sin(a) * r * .55); c.rotate(a * 2); c.fillStyle = col; c.strokeStyle = "#fff"; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -s * .16); c.lineTo(s * .09, 0); c.lineTo(0, s * .16); c.lineTo(-s * .09, 0); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+    if (o.hurt) { c.globalAlpha = o.hurt * .75; blob(); c.fillStyle = "#fff"; c.fill(); c.globalAlpha = 1; }
+    c.restore();
+    if ((o.wind || 0) > 0) { c.save(); c.strokeStyle = "#ff4f5e"; c.lineWidth = 6; c.globalAlpha = .4 + .6 * Math.abs(Math.sin(t * 14)); c.beginPath(); c.arc(x, y, s * (1.5 + o.wind * .3), 0, 7); c.stroke(); c.fillStyle = "#ff4f5e"; c.font = "800 64px Cairo"; c.textAlign = "center"; c.fillText("!", x, y - s * 1.75); c.restore(); }
+    if (o.max && !o.die) { const w = s * 2.2, hx = x - w / 2, hy = y - s * 2.05 - ((o.wind || 0) > 0 ? 60 : 0); c.save(); c.fillStyle = "#0b0414cc"; c.beginPath(); c.roundRect(hx - 6, hy - 6, w + 12, 30, 12); c.fill();
+      for (let i = 0; i < o.max; i++) { const sw = (w - (o.max - 1) * 6) / o.max; c.fillStyle = i < o.hp ? col : "#ffffff22"; c.beginPath(); c.roundRect(hx + i * (sw + 6), hy, sw, 18, 7); c.fill(); }
+      c.fillStyle = "#fff"; c.font = "800 24px Cairo"; c.textAlign = "center"; c.direction = LANG === "en" ? "ltr" : "rtl"; c.fillText(L(BOSS_TXT.name[0], BOSS_TXT.name[1]), x, hy - 12); c.restore(); }
+  }
+};
+
 /* ============ المحرّك ============ */
 const Eng = {
   w: null, wi: 0, si: 0, ti: 0, tasks: null, T: null, K: null, energy: 10, phase: "idle", rows: [], cells: [], fx: [], t: 0,
@@ -230,26 +305,29 @@ const Eng = {
   start(wi, si, opts = {}) {
     this.wi = wi; this.si = si; this.w = WORLDS[wi]; this.energy = ENERGY_MAX; this.ti = 0; this.solved = false; this.locked = false;
     this.code = opts.code || null; this.sandbox = !!opts.lab; this.t0 = performance.now();
+    this.boss = !this.sandbox && !!(this.w.stages[si] && this.w.stages[si].boss); if (this.boss) Boss.start(wi); else Boss.stop();
     const key = `${wi}-${si}`; this.losses = Save.d.losses[key] || 0;
     this.tasks = this.sandbox ? [{ kind: this.w.law, level: [2, 2, 3][wi] }] : this.w.stages[si].tasks; this.beginTask();
   },
   beginTask() {
     const d = this.tasks[this.ti]; this.K = KINDS[d.kind];
     if (this.code) RNG = seeded(`${this.code}|${this.wi}|${this.si}|${this.ti}`);
-    this.T = this.K.make(d.level); this.rows = []; this.fx = []; this.parts = []; this.charge = null; this.grab = null; this.drag = null; this.lowSaid = false; this.stun = 0;
-    const n = this.tasks.length > 1 ? 2 : 4; this.cells = this.sandbox ? [] : shuffle(this.K.cellsAt || this.T.cellsAt).slice(0, n).map(p => ({ x: p[0], y: p[1], got: false }));
+    this.T = this.K.make(d.level); if (this.boss && this.K.scene === "light") for (let k = 0; k < 60 && (this.T.sensor.y < 290 || this.T.sensor.x > 1120); k++) this.T = this.K.make(d.level);
+    this.rows = []; this.fx = []; this.parts = []; this.charge = null; this.grab = null; this.drag = null; this.lowSaid = false; this.stun = 0;
+    const n = this.boss ? 1 : this.tasks.length > 1 ? 2 : 4; this.cells = this.sandbox ? [] : shuffle(this.K.cellsAt || this.T.cellsAt).slice(0, n).map(p => ({ x: p[0], y: p[1], got: false }));
+    if (this.boss) { Boss.prep(this.T, this.K.scene); const bp = Boss.pos(), sp = (this.K.cellsAt || this.T.cellsAt).filter(p => Math.hypot(p[0] - bp.x, p[1] - bp.y) > 230 && Math.abs(p[0] - this.termX()) > 120); this.cells = shuffle(sp).slice(0, 1).map(p => ({ x: p[0], y: p[1], got: false })); }
     RNG = Math.random;
     Object.assign(this.rb, { x: this.K.robot.x, vx: 0, dir: -1, jh: 0, vy: 0, air: false, moving: false });
     const K = this.K, fk = `${this.wi}-${this.si}`;
-    this.hz = this.sandbox ? null : { x: K.hz[0] + (K.hz[1] - K.hz[0]) * Math.random(), dir: Math.random() < .5 ? -1 : 1, kind: ["dust", "spark", "rock", ["dust", "spark", "rock"][this.ti % 3]][this.wi], spin: 0 };
-    this.frag = (!this.sandbox && this.ti === 0 && !Save.d.frags[fk]) ? { x: K.frags[this.si][0], y: K.frags[this.si][1], key: fk } : null;
+    this.hz = (this.sandbox || this.boss) ? null : { x: K.hz[0] + (K.hz[1] - K.hz[0]) * Math.random(), dir: Math.random() < .5 ? -1 : 1, kind: ["dust", "spark", "rock", ["dust", "spark", "rock"][this.ti % 3]][this.wi], spin: 0 };
+    this.frag = (!this.sandbox && !this.boss && this.ti === 0 && K.frags[this.si] && !Save.d.frags[fk]) ? { x: K.frags[this.si][0], y: K.frags[this.si][1], key: fk } : null;
     if (this.sandbox) { const T = this.T, sc = this.K.scene;
       if (sc === "force") { T.sliders.push({ label: L("كتلة الصندوق m (كغ)", "Crate mass m (kg)"), min: 1, max: 10, step: .5, key: "m" }); T.vals.push(T.m); T.goal = L("المختبر الحر: غيّري القوة والكتلة وراقبي التسارع", "Free lab: change force and mass and watch the acceleration"); }
       if (sc === "gravity") { T.sliders.push({ label: L("كتلة الكوكب M", "Planet mass M"), min: 1, max: 6, step: .5, key: "M" }); T.vals.push(T.M); T.goal = L("المختبر الحر: غيّري السرعة وكتلة الكوكب", "Free lab: change the speed and the planet's mass"); }
       if (sc === "light") T.goal = L("المختبر الحر: وجّهي الشعاع كما تشائين", "Free lab: bounce the beam however you like");
       T.sliders.forEach((s, i) => s.val = T.vals[i]); }
-    this.hintUsed = false; this.phase = this.sandbox ? "act" : this.w.id === 4 ? "law" : "measure"; UI.onPhase();
-    this.say(this.sandbox ? "lab" : "start", true);
+    this.hintUsed = false; this.phase = this.sandbox ? "act" : this.w.id === 4 ? "law" : this.boss ? "act" : "measure"; UI.onPhase();
+    this.say(this.sandbox ? "lab" : this.boss ? (this.ti ? "bossnext" : "boss") : "start", true);
   },
   robotY() { return (this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy) - this.rb.jh; },
   part(x, y, o) { if (this.parts.length < 400) this.parts.push(Object.assign({ x, y, vx: 0, vy: 0, g: 600, life: 1, t: 0, r: 6, col: "#fff", grow: 0 }, o)); },
@@ -267,14 +345,15 @@ const Eng = {
   },
   nearMirror() { if (!this.T || this.K.scene !== "light") return null; const ms = this.phase === "act" ? this.T.mirrors : [this.T.mirrors[0]]; let best = null, bd = 130;
     ms.forEach((m, i) => { const d = Math.abs(this.rb.x - m.x); if (d < bd) { bd = d; best = i; } }); return best; },
+  termX() { return this.boss ? (this.K.scene === "gravity" ? 700 : 1470) : this.K.terminal; },
   interact() {
     if (this.grab != null) { this.grab = null; SFX.click(); return; }
     if (this.K.scene === "light" && this.nearMirror() != null) return this.toggleGrab();
-    const tx = this.K.terminal; if (!this.sandbox && tx != null && Math.abs(this.rb.x - tx) < 95) { if (this.busyNow()) return; this.setRobot("scan", 1.2); SFX.test(); this.say("archive", true); UI.hintModal(this.K.hint, true, true); return; }
+    const tx = this.termX(); if (!this.sandbox && tx != null && Math.abs(this.rb.x - tx) < 95) { if (this.busyNow()) return; this.setRobot("scan", 1.2); SFX.test(); this.say("archive", true); UI.hintModal(this.hintText(), true, true); return; }
     UI.toast(this.K.scene === "light" ? L("اقتربي من مرآة أو من جهاز الأرشيف 🖥️ ثم اضغطي ↓", "Walk to a mirror or the archive terminal 🖥️, then press ↓") : L("اقتربي من جهاز الأرشيف 🖥️ ثم اضغطي ↓ لتلميح مجاني", "Walk to the archive terminal 🖥️ and press ↓ for a free hint"));
   },
   drawWorldBits(c) {
-    const gy = this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy, t = this.t, tx = this.K.terminal;
+    const gy = this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy, t = this.t, tx = this.termX();
     if (!this.sandbox && tx != null) { c.save(); c.fillStyle = "#2a3170"; c.fillRect(tx - 10, gy - 120, 20, 120); c.fillStyle = "#1c2250"; c.strokeStyle = "#7FE8FF"; c.lineWidth = 5; c.beginPath(); c.roundRect(tx - 62, gy - 230, 124, 110, 16); c.fill(); c.stroke();
       c.fillStyle = "#7FE8FF"; for (let k = 0; k < 4; k++) { const w = 30 + ((Math.sin(t * 3 + k * 1.7) + 1) / 2) * 60; c.globalAlpha = .55 + .45 * Math.sin(t * 5 + k); c.fillRect(tx - 46, gy - 214 + k * 22, w, 10); } c.globalAlpha = 1;
       c.font = "800 30px Cairo"; c.textAlign = "center"; c.fillText("🖥️", tx, gy - 248 + Math.sin(t * 3) * 4);
@@ -310,7 +389,7 @@ const Eng = {
     for (const c of this.cells) if (!c.got && Math.hypot(c.x - x, c.y - y) < rr) { c.got = true; this.gain(3); SFX.collect(); this.fx.push({ x: c.x, y: c.y - 40, t: 0, txt: L("+٣", "+3"), col: "#5CE08A" }); this.boom(c.x, c.y, ["#5CE08A", "#BFFFD0", "#FFE08A"], 16, 260); this.setRobot("success", .8); this.say("collect"); return; }
   },
   chooseLaw(kind) {
-    if (kind === this.tasks[this.ti].kind) { this.phase = "measure"; SFX.good(); UI.onPhase(); UI.toast(L("صحيح! الآن قيسي.", "Correct! Now measure.")); }
+    if (kind === this.tasks[this.ti].kind) { this.phase = this.boss ? "act" : "measure"; SFX.good(); UI.onPhase(); if (!this.boss) UI.toast(L("صحيح! الآن قيسي.", "Correct! Now measure.")); }
     else { this.spend(1); UI.toast(L("ليس هذا القانون المناسب لهذا المشهد (−١ طاقة).", "That is not the right law for this scene (−1 energy).")); this.setRobot("think", 1); }
   },
   test() {
@@ -334,8 +413,9 @@ const Eng = {
       if (sc === "gravity") { const d = Math.round(20 * T.M / (T.vals[0] * T.vals[0]) * 10) / 10; this.rows.push({ cells: [AR(T.vals[0]), `${AR(d)}°`], key: Math.random() }); }
       UI.panel(); this.setRobot(ok ? "success" : "fail", 1.2); this.say(ok ? "good" : "labmiss", true); if (ok) SFX.good(); else UI.toast(msg);
       setTimeout(() => { if (!this.sandbox || this.T !== T) return; T.open = false; T.hit = false; T.cx = T.x0; T.rot = 0; T.dead = false; UI.controls(); }, 1300); UI.controls(); return; }
-    if (ok) { this.say("good", true); SFX.good(); this.setRobot("success", 1.4); const last = this.ti >= this.tasks.length - 1; this.locked = true;
-      setTimeout(() => { if (last) this.win(); else { this.ti++; this.locked = false; this.beginTask(); } }, 1100); if (!last) UI.toast(L("أحسنتِ! المهمة التالية…", "Well done! Next task…")); }
+    if (ok) { this.say("good", true); SFX.good(); this.setRobot("success", 1.4); const last = this.ti >= this.tasks.length - 1; this.locked = true; if (this.boss) Boss.hit();
+      setTimeout(() => { if (this.phase === "done") return; if (last) this.win(); else { this.ti++; this.locked = false; this.beginTask(); } }, this.boss ? (last ? 1900 : 1300) : 1100);
+      if (!last) UI.toast(this.boss ? L(`💥 ضربة! بقي للمُشتِّت ${AR(this.tasks.length - this.ti - 1)}`, `💥 Hit! The Scatterer has ${this.tasks.length - this.ti - 1} left`) : L("أحسنتِ! المهمة التالية…", "Well done! Next task…")); }
     else { this.setRobot("fail", 1.3); this.say("fail", true); UI.toast(msg || L("لم تنجح المحاولة (−١ طاقة).", "That attempt failed (−1 energy).")); this.spend(1); UI.controls(); }
   },
   win() {
@@ -345,7 +425,9 @@ const Eng = {
   hint() {
     if (this.phase === "done") return; const free = this.losses >= 2 || this.hintUsed;
     if (!free) { if (this.energy <= 1) { UI.toast(L("طاقتك لا تكفي للتلميح.", "Not enough energy for a hint.")); return; } this.spend(1); }
-    this.hintUsed = true; UI.hintModal(this.K.hint, free);
+    this.hintUsed = true; UI.hintModal(this.hintText(), free);
+  },
+  hintText() { const h = this.boss && BOSS_TXT.hint[this.K.scene]; return h ? L(h[0], h[1]) : this.K.hint;
   },
   update(dt) {
     this.t += dt; if (!this.T) return;
@@ -353,7 +435,7 @@ const Eng = {
     const r = this.robot; if (r.hold > 0) { r.hold -= dt; if (r.hold <= 0) r.s = "idle"; }
     const ch = this.charge; if (ch) { if (this.busyNow()) this.charge = null; else { ch.t += dt; ch.v = Math.min(10, 1 + Math.max(0, ch.t - .15) * 4.2); this.rb.x = this.T.cx + 70; this.rb.dir = -1; this.setRobot("push", .2);
       const st = Math.floor(ch.v * 2); if (st !== ch.st) { ch.st = st; SFX.tone(200 + ch.v * 70, .05, "triangle", .03); } } }
-    this.moveRobot(dt); this.K.update(this.T, sdt); this.fx.forEach(f => f.t += dt); this.fx = this.fx.filter(f => f.t < 1.2);
+    this.moveRobot(dt); this.K.update(this.T, sdt); Boss.update(dt); this.fx.forEach(f => f.t += dt); this.fx = this.fx.filter(f => f.t < 1.2);
     this.parts.forEach(p => { p.t += sdt; p.vy += p.g * sdt; p.x += p.vx * sdt; p.y += p.vy * sdt; p.r += p.grow * sdt; }); this.parts = this.parts.filter(p => p.t < p.life);
     if (this.bubble) { this.bubble.t += dt; if (this.bubble.t > this.bubble.dur) this.bubble = null; }
     const quiet = !this.keys.l && !this.keys.r && !this.charge && !this.drag && !this.K.busy(this.T) && (this.phase === "measure" || this.phase === "act") && !document.querySelector("#modal:not(.hidden)");
@@ -387,10 +469,10 @@ const Eng = {
     { const off = clamp((this.rb.x - 800) * .05, -40, 40); c.drawImage(IMG["bg" + w.id], -48 - off, -27, W * 1.06, H * 1.06); }
     if (w.gt) for (let x = 0; x < W; x += 600) c.drawImage(IMG[w.gt], x, GY, 600, 220);
     this.K.draw(c, this.T, this.phase);
-    this.drawWorldBits(c);
+    this.drawWorldBits(c); if (this.boss) Boss.draw(c);
     this.cells.forEach((p, i) => { if (!p.got) { const bob = Math.sin(this.t * 3 + i) * 6; c.drawImage(IMG.pickup, p.x - 38, p.y - 45 + bob, 76, 90); } });
     this.parts.forEach(p => { c.globalAlpha = Math.max(0, 1 - p.t / p.life); c.fillStyle = p.col; c.beginPath(); c.arc(p.x, p.y, p.r, 0, 7); c.fill(); }); c.globalAlpha = 1;
-    this.drawRobot(c); if (this.K.over) this.K.over(c, this.T); this.drawBubble(c);
+    this.drawRobot(c); if (this.K.over) this.K.over(c, this.T); if (this.boss) Boss.drawShots(c); this.drawBubble(c);
     this.fx.forEach(f => { c.save(); c.globalAlpha = 1 - f.t / 1.2; c.fillStyle = f.col; c.font = "800 44px Cairo"; c.textAlign = "center"; c.fillText(f.txt, f.x, f.y - f.t * 60); c.restore(); });
   },
   drawBubble(c) {

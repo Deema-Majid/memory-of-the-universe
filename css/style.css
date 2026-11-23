@@ -150,3 +150,7 @@ input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;bac
 .sb b{font-size:78px;line-height:96px;height:96px;display:block}
 .sb img{width:80px;height:96px;object-fit:contain}
 .sb .s{line-height:50px;height:50px}
+.stagebtns{gap:24px}.sb{width:210px}
+.sb.boss{border-color:#ff4f5e;background:radial-gradient(circle at 50% 40%,#3a1250dd,#141a42dd);box-shadow:0 0 26px #ff4f5e66;grid-template-rows:110px 46px 40px}
+.sb.boss .bossic{width:115px;height:110px}.sb.boss:not(.lock){animation:pop .45s backwards,bossglow 1.6s ease-in-out infinite alternate}
+@keyframes bossglow{from{box-shadow:0 0 14px #ff4f5e55}to{box-shadow:0 0 40px #ff4f5ecc}}
