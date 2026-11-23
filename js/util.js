@@ -3,8 +3,10 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
-const rnd = a => a[Math.floor(Math.random() * a.length)];
-const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+let RNG = Math.random;
+function seeded(str) { let h = 1779033703 ^ str.length; for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; } let a = h >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const rnd = a => a[Math.floor(RNG() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(RNG() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 let LANG = "ar";
 const L = (a, e) => LANG === "en" ? e : a;
 const AR = n => { if (LANG === "en") return String(Math.round(n * 10) / 10); const s = (Math.round(n * 10) / 10).toString(); return s.replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]).replace(".", "٫"); };
@@ -57,6 +59,8 @@ const SFX = {
   law() { [392, 494, 587, 784, 988].forEach((f, i) => this.tone(f, .35, "sine", .08, i * .11)); this.tone(196, 1, "triangle", .06, 0); },
   bad() { this.tone(200, .25, "sawtooth", .05, 0, 120); this.tone(150, .3, "sawtooth", .05, .13, 90); },
   win() { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => this.tone(f, .4, "sine", .09, i * .12)); [262, 330, 392].forEach(f => this.tone(f, 1.2, "triangle", .05, .5)); },
+  crash() { this.noise(.6, .12, 900, 80); this.tone(70, .5, "sawtooth", .07, 0, 35); },
+  sizzle() { this.noise(.8, .05, 4000, 1500); },
   lose() { [392, 330, 262, 196].forEach((f, i) => this.tone(f, .4, "triangle", .08, i * .2)); },
   /* موسيقى خلفية هادئة تتغير حسب العالم */
   SC: { menu: [0, 3, 7, 10, 14, 12], 0: [0, 2, 4, 7, 9, 12], 1: [0, 3, 5, 7, 10, 12], 2: [0, 2, 3, 7, 8, 12], 3: [0, 2, 5, 7, 9, 14] },
@@ -81,10 +85,10 @@ const SFX = {
 /* ---------- الحفظ ---------- */
 const SAVE_KEY = "dhakirat_alkawn_v1";
 const Save = {
-  d: { stars: {}, sound: true, story: false, losses: {}, profile: null, lang: "ar" },
-  load() { try { Object.assign(this.d, JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")); } catch (e) { } SFX.on = this.d.sound !== false; LANG = this.d.lang === "en" ? "en" : "ar"; },
+  d: { stars: {}, sound: true, story: false, losses: {}, profile: null, lang: "ar", laws: {} },
+  load() { try { Object.assign(this.d, JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")); } catch (e) { } this.d.laws = this.d.laws || {}; SFX.on = this.d.sound !== false; LANG = this.d.lang === "en" ? "en" : "ar"; },
   save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.d)); } catch (e) { } },
   stars(id) { return this.d.stars[id] || 0; },
   set(id, n) { if (n > this.stars(id)) this.d.stars[id] = n; this.save(); },
-  reset() { this.d = { stars: {}, sound: this.d.sound, story: false, losses: {}, profile: this.d.profile, lang: this.d.lang }; this.save(); }
+  reset() { this.d = { stars: {}, sound: this.d.sound, story: false, losses: {}, profile: this.d.profile, lang: this.d.lang, laws: {} }; this.save(); }
 };

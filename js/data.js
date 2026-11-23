@@ -42,3 +42,36 @@ const EN = {
 const wt = (w, f) => LANG === "en" ? EN.worlds[w.id - 1][f] : w[f];
 const lw = (k, f) => LANG === "en" ? EN.laws[k][f] : LAWS[k][f];
 const stt = i => LANG === "en" ? EN.story[i] : STORY[i].t;
+
+/* ===== كلام ذرّة ===== */
+const SAY = {
+  start: [["طاقتي محدودة… فكّري قبل ما نضغط!", "My battery is limited… think before we press!"], ["مستعدة؟ أنا مستعد… تقريبًا.", "Ready? I'm ready… almost."], ["هذا المكان يحتاج عالِمة. وصلتِ في الوقت المناسب!", "This place needs a scientist. Perfect timing!"], ["حرّكيني بالأسهم، أنا أحب المشي!", "Move me with the arrows, I love walking!"]],
+  lab: [["مختبر بلا عقوبات! خرّبي براحتك 😄", "A lab with no penalties! Break things freely 😄"], ["هنا كل شيء مسموح. جرّبي أغرب فكرة!", "Anything goes here. Try your weirdest idea!"]],
+  measure1: [["رقم جديد! قياس واحد ما يكفي… العلماء يكرّرون.", "New number! One reading isn't enough… scientists repeat."]],
+  measure: [["الجدول يحب الأرقام. هاتِ المزيد!", "The table loves numbers. Give it more!"], ["لاحظتِ نمطًا؟ أنا بدأت ألاحظ…", "Spot a pattern? I'm starting to…"], ["تسجيل… تم ✔", "Recording… done ✔"]],
+  wrong: [["أممم… الأرقام تقول شيئًا آخر.", "Hmm… the numbers say otherwise."], ["دماغي الإلكتروني اعترض!", "My electronic brain objects!"], ["قريبة! لكن الجدول ما وافق.", "Close! But the table disagrees."]],
+  law: [["وجدناه! قانون جديد في الذاكرة ✨", "Found it! A new law for the Memory ✨"], ["الكون تذكّر شيئًا بفضلك!", "The universe remembered something, thanks to you!"]],
+  fail: [["أوه… ما كان هذا المقصود.", "Oops… that wasn't the plan."], ["لا بأس، الفشل بيانات أيضًا!", "It's fine, failure is data too!"], ["سجّلتها: لا نكرّرها 😅", "Noted: let's not do that again 😅"], ["على الأقل كان المنظر جميلًا!", "At least it looked cool!"]],
+  labmiss: [["ههه! جرّبي قيمة ثانية.", "Ha! Try another value."], ["فشل رائع. ماذا تعلّمنا منه؟", "Beautiful failure. What did we learn?"]],
+  good: [["إصابة مباشرة!", "Direct hit!"], ["فيزياء ١٠٠٪!", "100% physics!"], ["شفتي؟ الأرقام ما تكذب.", "See? Numbers don't lie."]],
+  low: [["بطاريتي تصفّر… أبغى شحن!", "My battery's beeping… I need a charge!"]],
+  collect: [["يمّي! طاقة طازجة ⚡", "Yum! Fresh energy ⚡"], ["+٣… أحس إني أقدر أطير!", "+3… I feel like I could fly!"]],
+  idle: [["أنا هنا… أنتظر عبقريتك.", "Still here… waiting for your genius."], ["لو تعبتِ، زر المصباح فيه تلميح 💡", "Stuck? The bulb button has a hint 💡"], ["أفكر في الفيزياء… وفي البطاريات.", "Thinking about physics… and batteries."]],
+  grab: [["أمسكتها! دوّريها بـ ← →", "Got it! Rotate with ← →"]]
+};
+
+/* ===== كتاب ذاكرة الكون ===== */
+const BOOK = {
+  force: { icon: "law_force", f: "F = m × a",
+    ar: { t: "قانون نيوتن الثاني", d: "الدفعة نفسها تحرّك الجسم الخفيف أسرع من الثقيل. التسارع = القوة ÷ الكتلة.", ex: ["🛒 عربة التسوق الفارغة تنطلق بدفعة خفيفة، والممتلئة تحتاج دفعة أقوى بكثير للتسارع نفسه.", "⚽ ركلة واحدة تطيّر كرة القدم، لكنها بالكاد تحرّك كرة طبية ثقيلة."] },
+    en: { t: "Newton's Second Law", d: "The same push moves a light object faster than a heavy one. Acceleration = force ÷ mass.", ex: ["🛒 An empty shopping cart zooms off with a light push; a full one needs a much harder push for the same acceleration.", "⚽ One kick sends a football flying but barely moves a heavy medicine ball."] } },
+  light: { icon: "law_light", f: "i = r",
+    ar: { t: "قانون الانعكاس", d: "يرتدّ الضوء عن المرآة بالزاوية نفسها التي سقط بها، مقيسةً من العمودي.", ex: ["🔭 البيريسكوب في الغواصة: مرآتان مائلتان بزاوية ٤٥° تنقلان المنظر من فوق الماء.", "🚗 مرآة السيارة الجانبية تريك السيارات خلفك لأن الضوء يرتدّ بالزاوية نفسها."] },
+    en: { t: "Law of Reflection", d: "Light bounces off a mirror at the same angle it arrived, measured from the normal.", ex: ["🔭 A submarine periscope uses two mirrors at 45° to bring the view down from above the water.", "🚗 A car's side mirror shows the cars behind you because light bounces at the same angle."] } },
+  gravity: { icon: "law_gravity", f: "Δθ ∝ M ÷ v²",
+    ar: { t: "الجاذبية والمدارات", d: "الكوكب يحني مسار ما يمرّ بجانبه: كلما زادت كتلته زاد الانحراف، وكلما زادت السرعة قلّ.", ex: ["🛰️ مسبار فوياجر ٢ استعمل جاذبية المشتري وزحل وأورانوس ليغيّر مساره ويصل إلى نبتون.", "🌙 القمر لا يسقط على الأرض لأنه سريع بما يكفي لتحني الجاذبية مساره إلى مدار."] },
+    en: { t: "Gravity & Orbits", d: "A planet bends the path of anything passing by: more mass means more bending, more speed means less.", ex: ["🛰️ Voyager 2 used the gravity of Jupiter, Saturn and Uranus to bend its path and reach Neptune.", "🌙 The Moon doesn't fall to Earth because it moves fast enough for gravity to bend its path into an orbit."] } },
+  memory: { icon: "law_memory", f: "قِس ← استنتج ← تصرّف",
+    ar: { t: "طريقة العلماء", d: "العلم ليس حفظًا: قياس، ثم استنتاج، ثم تجربة تثبت أو تنفي. هذا ما فعلتِه في كل مرحلة.", ex: ["🔬 هكذا اكتشف نيوتن وغاليليو قوانينهما: بتجارب متكررة لا بالتخمين.", "🧠 كل مرة أخطأتِ وأعدتِ النظر في الجدول، كنتِ تفكرين كعالِمة."] },
+    en: { t: "The Scientist's Way", d: "Science isn't memorising: measure, deduce, then test. That's what you did in every stage.", ex: ["🔬 That's how Newton and Galileo found their laws: by repeated experiments, not guesses.", "🧠 Every time you got it wrong and looked at the table again, you were thinking like a scientist."] } }
+};
