@@ -237,9 +237,9 @@ const UI = {
     $("#controls").style.display = ph === "law" ? "none" : "";
   },
   /* ---------- النوافذ ---------- */
-  modal(html) { const m = $("#modal"); m.innerHTML = `<div class="mbox">${html}</div>`; m.classList.remove("hidden"); },
+  modal(html) { const m = $("#modal"); m.innerHTML = `<div class="mbox">${KB(html)}</div>`; m.classList.remove("hidden"); },
   closeModal() { $("#modal").classList.add("hidden"); $("#modal").innerHTML = ""; if (Eng.robot.hold > 50) Eng.robot.hold = .1; },
-  toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(this._tt); this._tt = setTimeout(() => e.classList.remove("on"), 3200); },
+  toast(t) { const e = $("#toast"); e.textContent = KB(t); e.classList.add("on"); clearTimeout(this._tt); this._tt = setTimeout(() => e.classList.remove("on"), 3200); },
   lawModal() {
     this.modal(`<h3>${L("أي قانون تحتاجين؟", "Which law do you need?")}</h3><p>${L("انظري إلى المشهد واختاري القانون المناسب لهذه المهمة.", "Look at the scene and pick the right law for this task.")}</p><div class="laws">${["force", "light", "gravity"].map(k => `<button class="lw" data-k="${k}"><img src="assets/ui/${LAWS[k].icon}.png" alt="">${k === "force" ? L("القوة والحركة", "Force & motion") : k === "light" ? L("انعكاس الضوء", "Reflection") : L("الجاذبية", "Gravity")}</button>`).join("")}</div>`);
     $$(".lw").forEach(b => b.onclick = () => { SFX.click(); if (b.dataset.k === Eng.tasks[Eng.ti].kind) this.closeModal(); Eng.chooseLaw(b.dataset.k); });
@@ -278,9 +278,19 @@ const UI = {
     addEventListener("keydown", e => { if ($("#hud").classList.contains("hidden") || e.target.tagName === "INPUT" && e.target.type === "text") return; if (e.key === "Enter") { e.preventDefault(); if (!e.repeat) Eng.pressStart(); return; } const k = KM[e.key]; if (!k) return; e.preventDefault(); if (k === "g" && e.repeat) return; Eng.keys[k] = 1; Eng.idleT = 0; });
     addEventListener("keyup", e => { if (e.key === "Enter" && !$("#hud").classList.contains("hidden")) { Eng.pressEnd(); return; } const k = KM[e.key]; if (k && k !== "j" && k !== "g") Eng.keys[k] = 0; });
     addEventListener("blur", () => { Eng.keys.l = Eng.keys.r = Eng.keys.j = 0; });
-    [["pL", "l"], ["pR", "r"], ["pJ", "j"], ["pG", "g"]].forEach(([id, k]) => { const b = $("#" + id); b.addEventListener("pointerdown", e => { e.preventDefault(); Eng.keys[k] = 1; }); ["pointerup", "pointerleave", "pointercancel"].forEach(ev => b.addEventListener(ev, () => { if (k !== "j" && k !== "g") Eng.keys[k] = 0; })); });
+    /* لوحة اللمس: يسار = مشي بالسحب دون رفع الإصبع، يمين = قفز وإمساك (تعمل معًا بإصبعين) */
+    const pl = $("#padL"), knob = pl.querySelector(".knob"); let pid = null;
+    const steer = e => { const r = pl.getBoundingClientRect(), dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), d = Math.abs(dx) < .12 ? 0 : dx < 0 ? -1 : 1; Eng.keys.l = d < 0 ? 1 : 0; Eng.keys.r = d > 0 ? 1 : 0; Eng.idleT = 0;
+      knob.style.transform = `translateX(${clamp(dx, -1, 1) * 38}%)`; pl.querySelectorAll(".pk").forEach(p => p.classList.toggle("on", (p.dataset.k === "l" && d < 0) || (p.dataset.k === "r" && d > 0))); };
+    const stop = () => { pid = null; Eng.keys.l = Eng.keys.r = 0; knob.style.transform = ""; pl.querySelectorAll(".pk").forEach(p => p.classList.remove("on")); pl.classList.remove("act"); };
+    pl.addEventListener("pointerdown", e => { e.preventDefault(); pid = e.pointerId; try { pl.setPointerCapture(pid); } catch (x) { } pl.classList.add("act"); steer(e); });
+    pl.addEventListener("pointermove", e => { if (e.pointerId === pid) steer(e); });
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => pl.addEventListener(ev, e => { if (e.pointerId === pid) stop(); }));
+    [["pJ", "j"], ["pG", "g"]].forEach(([id, k]) => { const b = $("#" + id); b.addEventListener("pointerdown", e => { e.preventDefault(); Eng.keys[k] = 1; Eng.idleT = 0; b.classList.add("on"); }); ["pointerup", "pointercancel", "pointerleave"].forEach(ev => b.addEventListener(ev, () => b.classList.remove("on"))); });
+    addEventListener("blur", stop);
     this.menu(); $("#bSound img").src = `assets/ui/sound_${SFX.on ? "on" : "off"}.png`; const c = cv.getContext("2d"); let last = performance.now();
-    const loop = now => { const dt = Math.min(.05, (now - last) / 1000); last = now; Eng.update(dt); Net.tick(dt); Eng.draw(c); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+    const padLbl = () => { const g = $("#pG small"), j = $("#pJ small"); if (g) g.textContent = Eng.K && Eng.K.scene === "light" ? L("أمسكي", "Grab") : L("أرشيف", "Archive"); if (j) j.textContent = L("قفز", "Jump"); };
+    let padT = 0; const loop = now => { if (now - padT > 500) { padT = now; padLbl(); } const dt = Math.min(.05, (now - last) / 1000); last = now; Eng.update(dt); Net.tick(dt); Eng.draw(c); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     window.__ready = true;
   }
 };

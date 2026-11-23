@@ -158,7 +158,7 @@ KINDS.light = {
       } c.restore();
     }
     if (Eng.grab != null && T.mirrors[Eng.grab]) { const gp = (Eng.players[Eng.grabPi] || Eng.P).rb, m = T.mirrors[Eng.grab], rx = gp.x, ry = Eng.gyBase() - gp.jh - 210; c.save(); c.strokeStyle = "rgba(127,232,255,.8)"; c.lineWidth = 4; c.setLineDash([10, 8]); c.lineDashOffset = -Eng.t * 60; c.beginPath(); c.moveTo(rx, ry); c.quadraticCurveTo((rx + m.x) / 2, Math.min(ry, m.y) - 80, m.x, m.y); c.stroke(); c.setLineDash([]); c.strokeStyle = "rgba(127,232,255,.9)"; c.beginPath(); c.arc(m.x, m.y, 100 + Math.sin(Eng.t * 6) * 6, 0, 7); c.stroke(); c.restore(); }
-    else if (ph === "measure" || ph === "act") { const k = Eng.nearMirror(); if (k != null) { const m = T.mirrors[k]; c.save(); c.fillStyle = "#FFC83D"; c.font = "800 30px Cairo"; c.textAlign = "center"; c.fillText(L("↓ أمسكي المرآة", "↓ grab mirror"), m.x, m.y - 100 + Math.sin(Eng.t * 4) * 5); c.restore(); } }
+    else if (ph === "measure" || ph === "act") { const k = Eng.nearMirror(); if (k != null) { const m = T.mirrors[k]; c.save(); c.fillStyle = "#FFC83D"; c.font = "800 30px Cairo"; c.textAlign = "center"; c.fillText(KB(L("↓ أمسكي المرآة", "↓ grab mirror")), m.x, m.y - 100 + Math.sin(Eng.t * 4) * 5); c.restore(); } }
     ms.forEach(m => { const u = { x: Math.cos(rad(m.phi)), y: -Math.sin(rad(m.phi)) };
       c.save(); c.lineCap = "round"; c.strokeStyle = "#1c2a4a"; c.lineWidth = 16; c.beginPath(); c.moveTo(m.x - u.x * m.len / 2, m.y - u.y * m.len / 2); c.lineTo(m.x + u.x * m.len / 2, m.y + u.y * m.len / 2); c.stroke();
       c.strokeStyle = "#BFEFFF"; c.lineWidth = 8; c.stroke(); c.fillStyle = "#FFC83D"; c.beginPath(); c.arc(m.x, m.y, 9, 0, 7); c.fill(); c.restore(); });
@@ -349,7 +349,7 @@ const Eng = {
   boom(x, y, cols, n = 24, sp = 400) { for (let k = 0; k < n; k++) { const a = Math.random() * Math.PI * 2, v = sp * (.3 + Math.random() * .7); this.part(x, y, { col: cols[k % cols.length], vx: Math.cos(a) * v, vy: Math.sin(a) * v - sp * .3, g: 700, life: .6 + Math.random() * .6, r: 4 + Math.random() * 7 }); } },
   say(key, force = false) {
     const pool = SAY[key]; if (!pool) return; if (this.bubble && this.bubble.t < this.bubble.dur - .3 && !force) return;
-    const p = pool[Math.floor(Math.random() * pool.length)]; this.bubble = { txt: LANG === "en" ? p[1] : p[0], t: 0, dur: 2.9, pi: this.ai };
+    const p = pool[Math.floor(Math.random() * pool.length)]; this.bubble = { txt: KB(LANG === "en" ? p[1] : p[0]), t: 0, dur: 2.9, pi: this.ai };
   },
   modalFor() { return this.ai === this.me && !!document.querySelector("#modal:not(.hidden)"); },
   busyNow() { return !this.T || this.K.busy(this.T) || this.locked || (this.phase !== "measure" && this.phase !== "act") || this.modalFor(); },
@@ -373,7 +373,7 @@ const Eng = {
     if (!this.sandbox && tx != null) { c.save(); c.fillStyle = "#2a3170"; c.fillRect(tx - 10, gy - 120, 20, 120); c.fillStyle = "#1c2250"; c.strokeStyle = "#7FE8FF"; c.lineWidth = 5; c.beginPath(); c.roundRect(tx - 62, gy - 230, 124, 110, 16); c.fill(); c.stroke();
       c.fillStyle = "#7FE8FF"; for (let k = 0; k < 4; k++) { const w = 30 + ((Math.sin(t * 3 + k * 1.7) + 1) / 2) * 60; c.globalAlpha = .55 + .45 * Math.sin(t * 5 + k); c.fillRect(tx - 46, gy - 214 + k * 22, w, 10); } c.globalAlpha = 1;
       c.font = "800 30px Cairo"; c.textAlign = "center"; c.fillText("🖥️", tx, gy - 248 + Math.sin(t * 3) * 4);
-      if (Math.abs(this.rb.x - tx) < 95 && (this.phase === "measure" || this.phase === "act")) { c.fillStyle = "#FFC83D"; c.font = "800 28px Cairo"; c.fillText(L("↓ تلميح مجاني", "↓ free hint"), tx, gy - 290); } c.restore(); }
+      if (Math.abs(this.rb.x - tx) < 95 && (this.phase === "measure" || this.phase === "act")) { c.fillStyle = "#FFC83D"; c.font = "800 28px Cairo"; c.fillText(KB(L("↓ تلميح مجاني", "↓ free hint")), tx, gy - 290); } c.restore(); }
     const fr = this.frag; if (fr && !fr.got) { const y = fr.y + Math.sin(t * 2.5) * 8; c.save(); const g = c.createRadialGradient(fr.x, y, 0, fr.x, y, 70); g.addColorStop(0, "rgba(127,232,255,.7)"); g.addColorStop(1, "rgba(127,232,255,0)"); c.fillStyle = g; c.beginPath(); c.arc(fr.x, y, 70, 0, 7); c.fill();
       c.translate(fr.x, y); c.rotate(Math.sin(t * 2) * .2); c.fillStyle = "#BFF4FF"; c.strokeStyle = "#fff"; c.lineWidth = 3; c.beginPath(); c.moveTo(0, -36); c.lineTo(22, -6); c.lineTo(0, 36); c.lineTo(-22, -6); c.closePath(); c.fill(); c.stroke();
       c.fillStyle = "#7FE8FF"; c.beginPath(); c.moveTo(0, -36); c.lineTo(22, -6); c.lineTo(0, 0); c.closePath(); c.fill(); c.restore(); }

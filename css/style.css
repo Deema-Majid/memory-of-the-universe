@@ -90,10 +90,18 @@ input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;bac
 #toast.on{opacity:1;transform:translate(-50%,0)}
 #rotate{display:none}
 @media (orientation:portrait){#rotate{display:flex;position:fixed;inset:0;background:#0d1330;z-index:99;align-items:center;justify-content:center;font:800 28px Cairo;text-align:center;padding:30px;color:#FFE08A}}
-#pad{position:absolute;bottom:146px;left:30px;display:flex;gap:12px;pointer-events:auto;opacity:.75}
-#pad button{width:92px;height:92px;border-radius:50%;border:3px solid #ffffff66;background:#141a42cc;color:#FFE08A;font-size:38px;touch-action:none}
-#pad button:active{background:#FFC83D;color:#2a1a00}
-@media (hover:hover) and (pointer:fine){#pad{display:none}}
+html{touch-action:manipulation}#cv{touch-action:none}
+.pad{position:absolute;bottom:150px;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;z-index:5}
+#padL{left:22px;width:390px;height:172px;border-radius:86px;background:#0b0f2b99;border:4px solid #ffffff44;display:flex;direction:ltr;overflow:hidden;box-shadow:0 8px 24px #0006}
+#padL .pk{flex:1;display:flex;align-items:center;justify-content:center;font-size:56px;color:#FFE08Acc;transition:background .08s}
+#padL .pk.on{background:#FFC83D55;color:#fff}
+#padL .knob{position:absolute;left:50%;top:50%;width:100px;height:100px;margin:-50px 0 0 -50px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff8,#FFC83D66);border:3px solid #fff8;transition:transform .06s;pointer-events:none}
+#padL.act{border-color:#FFC83D}
+#padR{right:22px;display:flex;align-items:flex-end;gap:22px;direction:ltr}
+.pb{width:172px;height:172px;border-radius:50%;border:4px solid #ffffff55;background:#0b0f2b99;color:#FFE08A;font:800 60px Cairo;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;box-shadow:0 8px 24px #0006;touch-action:none}
+.pb.small{width:136px;height:136px;font-size:46px;margin-bottom:-6px}
+.pb small{font-size:20px;font-weight:700;opacity:.85;margin-top:2px}.pb.on{background:#FFC83D;color:#2a1a00;transform:scale(.94)}
+@media (hover:hover) and (pointer:fine){.pad{display:none}}
 #hint2{position:absolute}
 @keyframes fadein{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:translateY(24px) scale(.94)}to{opacity:1;transform:none}}
