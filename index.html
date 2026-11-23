@@ -4,94 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>ذاكرة الكون</title>
-<meta name="description" content="لعبة فيزياء تعليمية: ساعد الروبوت «ذرّة» على ترميم أربعة عوالم نسيت قوانينها.">
 <link rel="icon" href="assets/logo/logo_icon.png">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div id="rot">دوّر جهازك أفقيًا للّعب ↻</div>
-<div id="stage">
- <canvas id="cv" width="1600" height="900"></canvas>
-
- <div id="loading" class="screen show"><img src="assets/logo/logo_stacked_dark.png" alt="" class="load-logo"><div class="bar"><i id="lbar"></i></div><p>جارٍ تحميل الكون…</p></div>
-
- <div id="menu" class="screen">
-  <img class="logo" src="assets/logo/logo_stacked_dark.png" alt="ذاكرة الكون">
-  <div class="menu-btns">
-   <button class="btn big" data-go="play">ابدأ اللعب</button>
-   <button class="btn" data-go="worlds">العوالم</button>
-   <button class="btn" data-go="story">القصة</button>
-   <button class="btn" data-go="tutorial">كيف ألعب؟</button>
-   <button class="btn" data-go="settings">الإعدادات</button>
+<div id="wrap"><div id="stage">
+  <canvas id="cv" width="1600" height="900"></canvas>
+  <div id="menu" class="screen"></div>
+  <div id="worlds" class="screen hidden"></div>
+  <div id="stages" class="screen hidden"></div>
+  <div id="hud" class="hidden">
+    <div id="topbar">
+      <button class="ib" id="bBack"><img src="assets/ui/back.png" alt="رجوع"></button>
+      <div id="title"></div>
+      <div id="chips"></div>
+      <div id="energy"></div>
+      <button class="ib" id="bHint"><img src="assets/ui/hint.png" alt="تلميح"></button>
+      <button class="ib" id="bPause"><img src="assets/ui/pause.png" alt="إيقاف"></button>
+    </div>
+    <div id="goal"></div>
+    <div id="panel"></div>
+    <div id="controls"><div id="sliders"></div><div id="btns"><button class="btn" id="bTest">جرّبي</button><button class="btn pri" id="bDeduce">ثبّتي الاستنتاج</button><button class="btn pri" id="bAct">نفّذي</button></div></div>
   </div>
-  <div class="menu-foot" id="menuStars"></div>
- </div>
-
- <div id="story" class="screen">
-  <img id="storyImg" alt="">
-  <button class="btn" id="storyNext">التالي</button>
-  <button class="btn ghost" id="storySkip">تخطّي</button>
-  <div class="dots" id="storyDots"></div>
- </div>
-
- <div id="worlds" class="screen">
-  <div class="topline"><button class="icon" data-go="menu"><img src="assets/ui/back.png" alt="رجوع"></button><h2>اختر عالمًا</h2></div>
-  <div id="worldCards"></div>
- </div>
-
- <div id="stages" class="screen">
-  <div class="topline"><button class="icon" data-go="worlds"><img src="assets/ui/back.png" alt="رجوع"></button><h2 id="stagesTitle"></h2></div>
-  <p id="stagesIntro" class="intro"></p>
-  <div id="stageCards"></div>
- </div>
-
- <div id="tutorial" class="screen">
-  <div class="topline"><button class="icon" data-go="menu"><img src="assets/ui/back.png" alt="رجوع"></button><h2>كيف ألعب؟</h2></div>
-  <div class="tut">
-   <div><b>١ قِس</b><p>اضغط «قِس» ليقرأ الروبوت قيم المهمة. القياس يكلّف وحدة طاقة.</p></div>
-   <div><b>٢ استنتج</b><p>أجب سؤال القانون. الإجابة الخاطئة تكلّف وحدة. الإجابة الصحيحة من أول مرة تمنحك خلية طاقة.</p></div>
-   <div><b>٣ تصرّف</b><p>اضبط القوة أو المرايا أو السرعة ثم نفّذ. المحاولة الفاشلة تكلّف وحدتين.</p></div>
-   <div><b>⚡ الطاقة</b><p>لكل مرحلة ١٠ وحدات. كلما بقي لديك أكثر نلتَ نجومًا أكثر: ٦ فأكثر = ٣ نجوم، ٣ فأكثر = نجمتان.</p></div>
-  </div>
-  <button class="btn big" data-go="play">فهمت، هيّا</button>
- </div>
-
- <div id="settings" class="screen">
-  <div class="topline"><button class="icon" data-go="menu"><img src="assets/ui/back.png" alt="رجوع"></button><h2>الإعدادات</h2></div>
-  <div class="set">
-   <button class="btn" id="setSound">الصوت: مفعّل</button>
-   <button class="btn danger" id="setReset">مسح التقدّم</button>
-   <p class="small">يُحفظ تقدّمك في متصفحك فقط.</p>
-  </div>
- </div>
-
- <div id="hud" class="screen hud">
-  <div class="top">
-   <button class="icon" id="hBack"><img src="assets/ui/back.png" alt="رجوع"></button>
-   <div class="ttl"><span id="hWorld"></span><small id="hStage"></small></div>
-   <div id="hDots" class="dots"></div>
-   <div class="energy"><img src="assets/img/pickup.png" class="eicon" alt=""><div id="hEnergy" class="cells"></div><b id="hEnergyN"></b></div>
-   <button class="icon" id="hHint"><img src="assets/ui/hint.png" alt="تلميح"></button>
-   <button class="icon" id="hSound"><img src="assets/ui/sound_on.png" alt="صوت"></button>
-   <button class="icon" id="hPause"><img src="assets/ui/pause.png" alt="إيقاف"></button>
-  </div>
-  <div id="chips"></div>
+  <div id="modal" class="hidden"></div>
   <div id="toast"></div>
-  <div class="panel">
-   <img id="face" src="assets/ui/neutral.png" alt="">
-   <div id="say"></div>
-   <div id="ctl"></div>
-  </div>
- </div>
-
- <div id="modal" class="screen"><div class="card" id="modalCard"></div></div>
-</div>
+  <div id="rotate">أدِيري الجهاز بالوضع الأفقي 📱↺</div>
+</div></div>
 <script src="js/util.js"></script>
-<script src="js/sim.js"></script>
 <script src="js/data.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/save.js"></script>
-<script src="js/draw.js"></script>
 <script src="js/game.js"></script>
+<script src="js/ui.js"></script>
 </body>
 </html>

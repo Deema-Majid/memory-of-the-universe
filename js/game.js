@@ -1,163 +1,277 @@
 "use strict";
-/* منطق اللعبة والواجهة */
-const stageEl=$("#stage"),cv=$("#cv"),ctx=cv.getContext("2d");
-let G=null,mode="loading",tLast=0,clock=0;
-function fit(){const s=Math.min(innerWidth/1600,innerHeight/900);stageEl.style.transform="translate(-50%,-50%) scale("+s+")";}
-addEventListener("resize",fit);fit();
-const SCREENS=["loading","menu","story","worlds","stages","tutorial","settings","hud"];
-function show(id){mode=id;SCREENS.forEach(s=>$("#"+s).classList.toggle("show",s===id));cv.style.display=id==="hud"?"block":"none";}
-function toast(msg,ms=2600){const t=$("#toast");t.textContent=msg;t.classList.add("on");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("on"),ms);}
-function modal(html,cls=""){const m=$("#modal");$("#modalCard").className="card "+cls;$("#modalCard").innerHTML=html;m.classList.add("show");}
-function closeModal(){$("#modal").classList.remove("show");}
-const stars=n=>[1,2,3].map(i=>'<img class="st" src="assets/ui/'+(i<=n?"star":"star0")+'.png" alt="">').join("");
-/* ---------- التنقل ---------- */
-document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(!b)return;SFX.click();go(b.dataset.go);});
-function go(name){
- closeModal();
- if(name==="menu"){renderMenu();show("menu");}
- else if(name==="worlds"){renderWorlds();show("worlds");}
- else if(name==="story"){startStory(()=>go("menu"));}
- else if(name==="tutorial"){show("tutorial");}
- else if(name==="settings"){renderSettings();show("settings");}
- else if(name==="play"){
-  if(!SAVE.d.story){startStory(()=>{SAVE.d.story=true;SAVE.save();go("play");});return;}
-  if(!SAVE.d.tut){SAVE.d.tut=true;SAVE.save();show("tutorial");return;}
-  let pick=null;for(let w=1;w<=4&&!pick;w++)for(let s=1;s<=3&&!pick;s++)if(SAVE.unlocked(w,s)&&SAVE.stars(w,s)===0)pick=[w,s];
-  if(pick)startStage(pick[0],pick[1]);else go("worlds");}
+const W = 1600, H = 900, GY = 700;
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const SPOTS = {
+  force: [[330, 585], [520, 585], [760, 585], [980, 450], [640, 430], [1180, 585]],
+  light: [[330, 300], [900, 230], [480, 500], [1040, 520], [300, 470], [1100, 360]],
+  gravity: [[480, 540], [900, 520], [620, 130], [1100, 150], [250, 380], [1000, 360]]
+};
+
+/* ============ تتبّع الأشعة ============ */
+function trace(E, ms, walls) {
+  let p = { x: E.x, y: E.y }, th = E.th, last = -1; const pts = [{ x: p.x, y: p.y }], hits = [];
+  for (let k = 0; k < 6; k++) {
+    const d = { x: Math.cos(rad(th)), y: -Math.sin(rad(th)) }; let best = null;
+    const test = (x1, y1, x2, y2, type, idx) => {
+      const ex = x2 - x1, ey = y2 - y1, den = d.x * ey - d.y * ex; if (Math.abs(den) < 1e-9) return;
+      const t = ((x1 - p.x) * ey - (y1 - p.y) * ex) / den, u = ((x1 - p.x) * d.y - (y1 - p.y) * d.x) / den;
+      if (t > 1e-3 && u >= 0 && u <= 1 && (!best || t < best.t)) best = { t, type, idx };
+    };
+    ms.forEach((m, i) => { if (i === last) return; const u = { x: Math.cos(rad(m.phi)), y: -Math.sin(rad(m.phi)) };
+      test(m.x - u.x * m.len / 2, m.y - u.y * m.len / 2, m.x + u.x * m.len / 2, m.y + u.y * m.len / 2, "m", i); });
+    walls.forEach(w => test(w.x1, w.y1, w.x2, w.y2, "w"));
+    if (!best) { pts.push({ x: p.x + d.x * 2500, y: p.y + d.y * 2500 }); break; }
+    p = { x: p.x + d.x * best.t, y: p.y + d.y * best.t }; pts.push(p);
+    if (best.type === "w") break;
+    const m = ms[best.idx], n = { x: Math.sin(rad(m.phi)), y: Math.cos(rad(m.phi)) };
+    hits.push({ idx: best.idx, i: deg(Math.acos(clamp(Math.abs(d.x * n.x + d.y * n.y), 0, 1))) });
+    th = 2 * m.phi - th; last = best.idx;
+  }
+  return { pts, hits };
 }
-function renderMenu(){$("#menuStars").innerHTML=stars(0).replace(/<img[^>]*star0[^>]*>/g,"").length?'<span>النجوم: '+AR(SAVE.total(),0)+' / ٣٦</span>':"";}
-function renderSettings(){$("#setSound").textContent="الصوت: "+(SFX.on?"مفعّل":"مغلق");}
-$("#setSound").onclick=()=>{SFX.set(!SFX.on);SAVE.d.sound=SFX.on;SAVE.save();SFX.click();renderSettings();};
-$("#setReset").onclick=()=>{modal('<h2>مسح التقدّم؟</h2><p>ستعود كل المراحل إلى البداية.</p><div class="row"><button class="btn danger" id="mYes">نعم، امسح</button><button class="btn" id="mNo">إلغاء</button></div>');
- $("#mYes").onclick=()=>{SAVE.reset();closeModal();toast("تم مسح التقدّم");renderMenu();};$("#mNo").onclick=closeModal;};
-/* ---------- القصة ---------- */
-let storyI=0,storyDone=null;
-function startStory(done){storyI=0;storyDone=done;show("story");drawStory();}
-function drawStory(){$("#storyImg").src="assets/story/story_"+(storyI+1)+".png";$("#storyDots").innerHTML=[0,1,2,3].map(i=>'<i class="'+(i===storyI?"on":"")+'"></i>').join("");$("#storyNext").textContent=storyI===3?"ابدأ المغامرة":"التالي";}
-$("#storyNext").onclick=()=>{SFX.click();if(storyI<3){storyI++;drawStory();}else{SAVE.d.story=true;SAVE.save();storyDone&&storyDone();}};
-$("#storySkip").onclick=()=>{SFX.click();SAVE.d.story=true;SAVE.save();storyDone&&storyDone();};
-/* ---------- العوالم والمراحل ---------- */
-function renderWorlds(){
- $("#worldCards").innerHTML=WORLDS.map(w=>{const lock=!SAVE.unlocked(w.id,1);
-  return '<button class="wcard '+(lock?"lock":"")+'" data-w="'+w.id+'" style="--c:'+w.color+'"><img class="wi" src="assets/ui/'+w.icon+'.png" alt=""><b>'+w.name+'</b><small>'+w.law+'</small><div class="ws">'+(lock?'<img class="lk" src="assets/ui/lock.png" alt="مقفل">':stars(Math.ceil(SAVE.worldStars(w.id)/3)).replace(/class="st"/g,'class="st sm"')+'<em>'+AR(SAVE.worldStars(w.id),0)+'/٩</em>')+'</div></button>';}).join("");
- $$("#worldCards .wcard").forEach(b=>b.onclick=()=>{if(b.classList.contains("lock")){SFX.bad();return;}SFX.click();openWorld(+b.dataset.w);});}
-function openWorld(w){const W=WORLDS[w-1];$("#stagesTitle").textContent="عالم "+W.name;$("#stagesIntro").textContent=W.intro;
- $("#stageCards").innerHTML=[1,2,3].map(s=>{const lock=!SAVE.unlocked(w,s);return '<button class="scard '+(lock?"lock":"")+'" data-s="'+s+'" style="--c:'+W.color+'"><span class="sn">'+AR(s,0)+'</span><b>'+W.stages[s-1]+'</b><div>'+(lock?'<img class="lk" src="assets/ui/lock.png" alt="مقفل">':stars(SAVE.stars(w,s)))+'</div></button>';}).join("");
- $$("#stageCards .scard").forEach(b=>b.onclick=()=>{if(b.classList.contains("lock")){SFX.bad();return;}SFX.click();startStage(w,+b.dataset.s);});
- $("#stages").querySelector(".icon").dataset.go="worlds";show("stages");}
-/* ---------- بدء المرحلة ---------- */
-function startStage(w,s){
- closeModal();
- G={w,s,tasks:makeStage(w,s),ti:0,energy:10,solved:false,parts:[],used:{scan:0,hint:0,fail:0}};
- show("hud");$("#hWorld").textContent="عالم "+WORLDS[w-1].name;$("#hStage").textContent="المرحلة "+AR(s,0)+": "+WORLDS[w-1].stages[s-1];
- startTask();
- if(s===1||w===4){const W=WORLDS[w-1];G.paused=true;modal('<img class="mi" src="assets/ui/'+W.icon+'.png" alt=""><h2>عالم '+W.name+'</h2><p>'+W.intro+'</p><button class="btn big" id="mGo">ابدأ</button>');$("#mGo").onclick=()=>{SFX.click();closeModal();G.paused=false;};}}
-function startTask(){
- const t=G.task=G.tasks[G.ti];
- Object.assign(G,{phase:"measure",scanned:false,scanInfo:null,mood:"idle",anim:null,firstTry:true,deduced:false,cellTaken:false,cellFly:null,plateOn:false,gateOpen:false,sensorLock:false,crateX:t.x0,sel:0,angles:t.kind==="light"?t.start.slice():null,F:0,V:null,disabled:[],opts:null,msg:null});
- t.cellPos=t.kind==="light"?{x:760,y:105}:{x:700,y:225};
- G.F=t.kind==="force"?Math.round(t.Fmax/4):0;G.V=t.kind==="grav"?6:null;
- render();}
-/* ---------- الطاقة ---------- */
-function spend(n){G.energy=Math.max(0,G.energy-n);renderHud();}
-function gain(n){G.energy=Math.min(10,G.energy+n);renderHud();}
-function renderHud(){$("#hEnergy").innerHTML=Array.from({length:10},(_,i)=>'<i class="'+(i<G.energy?"on":"")+'"></i>').join("");$("#hEnergyN").textContent=AR(G.energy,0);
- $("#hDots").innerHTML=G.tasks.length>1?G.tasks.map((_,i)=>'<i class="'+(i<G.ti?"done":i===G.ti?"cur":"")+'"></i>').join(""):"";
- $("#hSound").firstChild.src="assets/ui/"+(SFX.on?"sound_on":"sound_off")+".png";}
-function setFace(k){$("#face").src="assets/ui/"+k+".png";}
-function mood(m,ms){G.mood=m;clearTimeout(G.mt);if(ms)G.mt=setTimeout(()=>{G.mood="idle";},ms);}
-/* ---------- بناء اللوحة ---------- */
-function chips(){const t=G.task,c=[];
- if(G.scanned){
-  if(t.kind==="force"){c.push(["الكتلة",fmt(t.m)+" كغ"],["التسارع المطلوب",fmt(t.A)+" م/ث²"]);}
-  else if(t.kind==="light"){const i=G.scanInfo;c.push(["زاوية السقوط",AR(i,0)+"°"],["زاوية الانعكاس",AR(i,0)+"°"]);}
-  else c.push(["كتلة الكوكب",fmt(t.M)],["الانحناء المطلوب",AR(t.dthT,1)+"°"]);}
- if(G.phase==="act"){
-  if(t.kind==="force")c.push(["التسارع الناتج",AR(G.F/t.m,2)+" م/ث²","live"]);
-  if(t.kind==="grav")c.push(["الانحناء الناتج",AR(gravDth(t,G.V),1)+"°","live"]);}
- $("#chips").innerHTML=c.map(x=>'<div class="chip '+(x[2]||"")+'"><small>'+x[0]+'</small><b>'+x[1]+'</b></div>').join("");}
-function render(){
- const t=G.task,ph=G.phase,say=$("#say"),ctl=$("#ctl");renderHud();chips();
- setFace(G.energy<=2?"tired":ph==="measure"?"neutral":ph==="deduce"?"thinking":"happy");
- if(ph==="measure"){
-  say.textContent=t.kind==="force"?"هذا صندوق لا أعرف كتلته. اضغط «قِس» ليقرأ حسّاسي الكتلة والتسارع المطلوب.":t.kind==="light"?"الشعاع يخرج من المصدر. اضغط «قِس» لأقيس زاويتي السقوط والانعكاس عند المرآة الأولى.":"المسبار جاهز للإطلاق. اضغط «قِس» لأعرف كتلة الكوكب والانحناء المطلوب.";
-  ctl.innerHTML='<button class="btn big" id="bScan">قِس <small>−١ ⚡</small></button>';$("#bScan").onclick=scan;}
- else if(ph==="deduce"){
-  say.textContent=t.deduce.q;
-  if(!G.opts)G.opts=shuffle(t.deduce.opts.map((o,i)=>({txt:o[0],ok:!!o[1],i})));
-  ctl.innerHTML='<div class="opts">'+G.opts.map((o,k)=>'<button class="btn opt" data-k="'+k+'" '+(G.disabled.includes(k)?"disabled":"")+'>'+o.txt+'</button>').join("")+'</div>';
-  $$(".opt",ctl).forEach(b=>b.onclick=()=>pick(+b.dataset.k));}
- else if(ph==="act"){
-  if(t.kind==="force"){say.textContent="القوة = الكتلة × التسارع. اضبط القوة اللازمة ثم ادفع.";
-   ctl.innerHTML='<div class="sl"><label>القوة: <b id="vF">'+fmt(G.F)+'</b> نيوتن</label><input id="rF" type="range" min="0" max="'+t.Fmax+'" step="0.5" value="'+G.F+'"></div><button class="btn big" id="bGo">ادفع</button>';
-   $("#rF").oninput=e=>{G.F=+e.target.value;$("#vF").textContent=fmt(G.F);chips();};$("#bGo").onclick=fire;}
-  else if(t.kind==="light"){say.textContent="أدِر المرايا حتى يضيء المستشعر، ثم ثبّتها.";
-   ctl.innerHTML='<div class="sls">'+t.mirrors.map((m,i)=>'<div class="sl"><label>المرآة '+AR(i+1,0)+': <b id="vA'+i+'">'+AR(G.angles[i],0)+'</b>°</label><input data-i="'+i+'" type="range" min="10" max="170" step="1" value="'+G.angles[i]+'"></div>').join("")+'</div><button class="btn big" id="bGo">ثبّت</button>';
-   $$("input[type=range]",ctl).forEach(r=>{const f=e=>{const i=+r.dataset.i;G.angles[i]=+r.value;G.sel=i;$("#vA"+i).textContent=AR(r.value,0);};r.oninput=f;r.onfocus=()=>G.sel=+r.dataset.i;r.onpointerdown=()=>G.sel=+r.dataset.i;});$("#bGo").onclick=fire;}
-  else{say.textContent="الانحناء = ٢٠ × الكتلة ÷ السرعة². اختر سرعة تعطي الانحناء المطلوب.";
-   ctl.innerHTML='<div class="sl"><label>سرعة الإطلاق: <b id="vV">'+fmt(G.V)+'</b></label><input id="rV" type="range" min="2" max="10" step="0.5" value="'+G.V+'"></div><button class="btn big" id="bGo">أطلق</button>';
-   $("#rV").oninput=e=>{G.V=+e.target.value;$("#vV").textContent=fmt(G.V);chips();};$("#bGo").onclick=fire;}}
- else{ctl.innerHTML="";}
- if(G.msg){say.textContent=G.msg;}}
-/* ---------- القياس ---------- */
-function scan(){
- if(G.phase!=="measure"||G.busy)return;G.busy=true;spend(1);G.used.scan++;SFX.scan();mood("scan");setFace("scanning");
- setTimeout(()=>{const t=G.task;
-  if(t.kind==="light"){const a=rad(G.angles[0]);G.scanInfo=Math.round(deg(Math.acos(Math.min(1,Math.abs(Math.sin(a))))));}
-  G.scanned=true;G.phase="deduce";G.busy=false;mood("think",800);
-  if(G.energy<=0){lose();return;}render();},1300);}
-/* ---------- الاستنتاج ---------- */
-function pick(k){
- const o=G.opts[k];
- if(o.ok){SFX.good();G.phase="act";G.msg=null;mood("success",900);
-  if(G.firstTry){G.cellFly={p:0};SFX.cell();tween(1000,p=>{G.cellFly&&(G.cellFly.p=p);},()=>{G.cellFly=null;G.cellTaken=true;gain(1);toast("التقطتَ خلية طاقة ⚡ +١");});}
-  else toast("صحيح. لكن الخلية تُمنح للإجابة الأولى فقط.");
-  render();}
- else{G.firstTry=false;G.disabled.push(k);SFX.bad();mood("fail",800);spend(1);toast("ليست الإجابة الصحيحة (−١ ⚡)");if(G.energy<=0){lose();return;}render();}}
-function tween(ms,f,done){const t0=performance.now();(function s(n){const p=Math.min(1,(n-t0)/ms);f(p);if(p<1)requestAnimationFrame(s);else done&&done();})(t0);}
-/* ---------- التنفيذ ---------- */
-function fire(){
- if(G.busy||G.phase!=="act")return;const t=G.task;
- if(t.kind==="force"){const res=forceSim(t,G.F);G.busy=true;SFX.push();G.anim={type:"push",p:0,res};
-  tween(2200,p=>{G.anim.p=p;const tt=p*t.T,d=.5*res.a*tt*tt*t.pxm;G.crateX=Math.max(400,t.x0-d);},()=>endAttempt(res.ok,res.slow?"القوة ضعيفة: توقف الصندوق قبل علامة الهدف.":"القوة كبيرة: تجاوز الصندوق علامة الهدف."));}
- else if(t.kind==="light"){const tr=traceBeam(t,G.angles);SFX.beam();G.busy=true;setTimeout(()=>{endAttempt(tr.hit,"لم يصل الشعاع إلى المستشعر. تتبّع الشعاع وأدِر المرايا.");},350);}
- else{const res=gravSim(t,G.V);G.busy=true;SFX.launch();G.anim={type:"launch",p:0,res};
-  tween(Math.max(1400,res.pts.length*26),p=>{G.anim.p=p;},()=>endAttempt(res.hit&&!res.crash,res.crash==="planet"?"سقط المسبار في الكوكب: الانحناء كبير جدًا.":res.crash==="ast"?"اصطدم المسبار بكويكب.":res.dth>t.dthT?"انحنى المسار أكثر من اللازم.":"انحنى المسار أقل من اللازم."));}}
-function endAttempt(ok,failMsg){
- const t=G.task;G.busy=false;
- if(ok){if(t.kind==="force"){G.plateOn=true;G.gateOpen=true;}if(t.kind==="light")G.sensorLock=true;
-  mood("success");setFace("happy");SFX.good();const P=t.kind==="force"?{x:t.plateX,y:GROUND-285}:t.kind==="light"?t.sensor:t.ring;burst(G,P.x,P.y,"#FFD166",40);
-  G.phase="done";render();G.msg="أحسنت! عاد قانون جديد إلى مكانه.";$("#say").textContent=G.msg;
-  setTimeout(()=>{if(G.ti+1<G.tasks.length){G.ti++;G.msg=null;fade(startTask);}else stageWin();},1500);}
- else{G.used.fail++;mood("fail",1400);SFX.bad();spend(2);setFace("sad");G.msg=failMsg+" (−٢ ⚡)";$("#say").textContent=G.msg;
-  if(G.energy<=0){setTimeout(lose,900);return;}
-  setTimeout(()=>{G.anim=null;G.crateX=t.x0;G.msg=null;if(G.phase==="act")render();},1300);}}
-function fade(cb){const el=$("#hud");el.classList.add("fade");setTimeout(()=>{cb();el.classList.remove("fade");},400);}
-/* ---------- فوز وخسارة ---------- */
-function stageWin(){
- const n=G.energy>=6?3:G.energy>=3?2:1;SAVE.setStars(G.w,G.s,n);SFX.win();
- const kinds=[...new Set(G.tasks.map(t=>t.kind))],laws=kinds.map(k=>'<li>'+LAWS[k]+'</li>').join("");
- const last=G.w===4&&G.s===3;
- if(last){modal('<img class="core" src="assets/img/core.png" alt=""><h2>عاد الكون كاملًا!</h2><div class="stars">'+stars(n)+'</div><p>تذكّرت العوالم الأربعة قوانينها بفضلك يا بطل. مجموع نجومك: '+AR(SAVE.total(),0)+' من ٣٦.</p><ul class="laws">'+laws+'</ul><div class="row"><button class="btn" data-go="worlds" id="mW">العوالم</button><button class="btn" id="mR">أعد المرحلة</button></div>','win');
-  $("#mW").onclick=()=>{closeModal();};$("#mR").onclick=()=>startStage(G.w,G.s);return;}
- modal('<h2>أحسنت! أُنجزت المرحلة</h2><div class="stars">'+stars(n)+'</div><p>استعدنا قانونًا:</p><ul class="laws">'+laws+'</ul><p class="small">بقيت لديك '+AR(G.energy,0)+' وحدات طاقة.</p><div class="row"><button class="btn big" id="mN">التالي</button><button class="btn" id="mR">أعد المرحلة</button><button class="btn ghost" id="mH">العوالم</button></div>','win');
- $("#mN").onclick=()=>{SFX.click();if(G.s<3)startStage(G.w,G.s+1);else startStage(G.w+1,1);};
- $("#mR").onclick=()=>{SFX.click();startStage(G.w,G.s);};
- $("#mH").onclick=()=>{SFX.click();closeModal();go("worlds");};}
-function lose(){G.phase="lost";G.paused=true;SFX.bad();modal('<img class="mi" src="assets/ui/tired.png" alt=""><h2>نفدت الطاقة</h2><p>لا بأس. القياس والاستنتاج أولًا يوفّران الطاقة. جرّب من جديد.</p><div class="row"><button class="btn big" id="mR">حاول مجددًا</button><button class="btn ghost" id="mH">العوالم</button></div>','lose');
- $("#mR").onclick=()=>{SFX.click();startStage(G.w,G.s);};$("#mH").onclick=()=>{SFX.click();closeModal();go("worlds");};}
-/* ---------- أزرار الشريط العلوي ---------- */
-$("#hPause").onclick=()=>{if(!G||G.phase==="lost")return;SFX.click();G.paused=true;modal('<h2>متوقّف</h2><div class="row v"><button class="btn big" id="mC">متابعة</button><button class="btn" id="mR">أعد المرحلة</button><button class="btn ghost" id="mH">العوالم</button></div>');
- $("#mC").onclick=()=>{closeModal();G.paused=false;};$("#mR").onclick=()=>startStage(G.w,G.s);$("#mH").onclick=()=>{closeModal();go("worlds");};};
-$("#hBack").onclick=()=>{SFX.click();closeModal();go("worlds");};
-$("#hSound").onclick=()=>{SFX.set(!SFX.on);SAVE.d.sound=SFX.on;SAVE.save();SFX.click();renderHud();};
-$("#hHint").onclick=()=>{if(!G||G.busy||G.phase==="lost"||G.phase==="done")return;if(G.energy<2){toast("طاقتك لا تكفي لتلميح");SFX.bad();return;}
- SFX.click();spend(1);G.used.hint++;G.paused=true;modal('<img class="mi" src="assets/ui/hint.png" alt=""><h2>تلميح</h2><p>'+G.task.hint+'</p><button class="btn" id="mC">حسنًا (−١ ⚡)</button>');$("#mC").onclick=()=>{closeModal();G.paused=false;};};
-/* ---------- الحلقة الرئيسية ---------- */
-function loop(ts){const dt=Math.min(.05,(ts-tLast)/1000||0);tLast=ts;clock+=dt;
- if(mode==="hud"&&G&&G.task)drawScene(ctx,G,clock);
- requestAnimationFrame(loop);}
-/* ---------- الإقلاع ---------- */
-SFX.set(SAVE.d.sound!==false);
-loadAll(p=>{$("#lbar").style.width=(p*100)+"%";}).then(()=>{(document.fonts&&document.fonts.ready||Promise.resolve()).then(()=>{renderMenu();show("menu");requestAnimationFrame(loop);});});
-window.__dbg={G:()=>G,go,startStage,SAVE};
+function distSeg(p, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy; let t = l2 ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2 : 0; t = clamp(t, 0, 1);
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+function lightSolved(T, phis) {
+  T.mirrors.forEach((m, i) => m.phi = phis[i]);
+  const r = trace(T.E, T.mirrors, T.walls), nm = T.mirrors.length;
+  const ok = r.hits.length >= nm && distSeg(T.sensor, r.pts[nm], r.pts[nm + 1]) <= T.sensor.r;
+  return { r, ok };
+}
+
+/* ============ المهام ============ */
+const KINDS = {};
+
+KINDS.force = {
+  scene: "force", cols: ["القوة F", "التسارع a"], panel: "right",
+  make(level) {
+    const m = rnd([2, 4, 5]), aT = [1, 1.5, 2][level - 1], x0 = 1100;
+    return { m, aT, x0, gateX: x0 - 400 * aT, cx: x0, anim: null, open: false,
+      sliders: [{ label: "القوة F (نيوتن)", min: 1, max: 10, step: .5, val: 5 }], vals: [5],
+      goal: `الهدف: تسارع a = ${AR(aT)} م/ث²` , cellsAt: SPOTS.force };
+  },
+  measure(T) {
+    const F = T.vals[0], a = F / T.m; T.anim = { mode: "test", a, t: 0, dur: 1.1 };
+    return { raw: { F, a }, cells: [AR(F), AR(a)], key: F };
+  },
+  options(T) { return { q: "من القراءات، كم تبلغ كتلة الصندوق؟", opts: [2, 4, 5].map(m => ({ t: `${AR(m)} كغ`, ok: m === T.m, why: m })) }; },
+  wrong(T, o, rows) { const r = rows[rows.length - 1].raw; return `لو كانت الكتلة ${AR(o.why)} كغ لأعطت القوة ${AR(r.F)}N تسارعًا ${AR(r.F / o.why)}، لكنك قِستِ ${AR(r.a)}.`; },
+  act(T) { const a = T.vals[0] / T.m; T.anim = { mode: "act", a, t: 0, dur: 2 }; },
+  update(T, dt) {
+    const an = T.anim; if (!an) return; an.t += dt;
+    const tt = Math.min(an.t, an.mode === "test" ? .8 : 2);
+    T.cx = Math.max(90, T.x0 - 100 * an.a * tt * tt);
+    if (an.t >= an.dur) {
+      T.anim = null;
+      if (an.mode === "test") { T.cx = T.x0; Eng.testDone(); }
+      else { const ok = Math.abs(T.cx - T.gateX) <= 70; if (ok) T.open = true; Eng.actDone(ok, T.cx > T.gateX ? "توقف الصندوق قبل البوابة: تسارع أقل من المطلوب." : "اندفع الصندوق متجاوزًا البوابة: تسارع أكبر من المطلوب."); }
+    }
+  },
+  busy: T => !!T.anim,
+  draw(c, T, ph) {
+    const gi = T.open ? IMG.gateO : IMG.gateC;
+    if (ph === "act" || T.open) c.drawImage(gi, T.gateX - 100, GY - 260 + 6, 200, 260);
+    c.drawImage(IMG.crate1, T.cx - 80, GY - 160 + 12, 160, 160);
+    if (ph === "act") { c.strokeStyle = "rgba(255,200,61,.6)"; c.setLineDash([10, 10]); c.lineWidth = 3; c.beginPath(); c.moveTo(T.gateX, GY + 28); c.lineTo(T.x0, GY + 28); c.stroke(); c.setLineDash([]); }
+  },
+  hint: "a = F ÷ m. غيّري القوة وقارني التسارع: النسبة F÷a ثابتة وتساوي الكتلة.",
+  robot: { x: 1330, gy: GY }
+};
+
+KINDS.light = {
+  scene: "light", cols: ["سقوط i", "انعكاس r"], panel: "right",
+  make(level) {
+    for (let tries = 0; tries < 2000; tries++) {
+      const E = { x: 230, y: 620, th: 0 }, M = [{ x: level === 1 ? 620 : 560, y: 620, len: 160 }];
+      const sol = [ri(level === 1 ? 20 : 15, level === 1 ? 40 : 35)]; let th = 2 * sol[0], sensor;
+      if (level === 1) sensor = { x: M[0].x + 380 * Math.cos(rad(th)), y: M[0].y - 380 * Math.sin(rad(th)), r: 46 };
+      else {
+        const m2 = { x: M[0].x + 300 * Math.cos(rad(th)), y: M[0].y - 300 * Math.sin(rad(th)), len: 160 }; M.push(m2);
+        sol.push(ri(0, 180)); const th2 = 2 * sol[1] - th; sensor = { x: m2.x + 300 * Math.cos(rad(th2)), y: m2.y - 300 * Math.sin(rad(th2)), r: 46 };
+        const dd = { x: Math.cos(rad(th)), y: -Math.sin(rad(th)) }, nn = { x: Math.sin(rad(sol[1])), y: Math.cos(rad(sol[1])) };
+        if (Math.abs(dd.x * nn.x + dd.y * nn.y) < .35) continue;
+      }
+      if (sensor.x < 260 || sensor.x > 1130 || sensor.y < 150 || sensor.y > 640) continue;
+      const walls = level === 3 ? [{ x1: 930, y1: 420, x2: 930, y2: 700 }] : [];
+      const T = { E, mirrors: M, sensor, walls };
+      if (level >= 2 && Math.hypot(sensor.x - M[1].x, sensor.y - M[1].y) < 200) continue;
+      if (!lightSolved(T, sol).ok) continue;
+      const rad0 = M.map(() => 45);
+      Object.assign(T, { sol, level, anim: null, beam: null, hit: false, goal: "الهدف: وجّهي الشعاع إلى المستشعر",
+        sliders: M.map((m, i) => ({ label: M.length > 1 ? `المرآة ${AR(i + 1)} (درجة)` : "زاوية المرآة (درجة)", min: 0, max: i === 0 ? 90 : 180, step: 1, val: rad0[i] })),
+        vals: rad0.slice(), cellsAt: SPOTS.light });
+      M.forEach((m, i) => m.phi = T.vals[i]);
+      return T;
+    }
+    throw new Error("light gen failed");
+  },
+  measure(T) {
+    T.mirrors[0].phi = T.vals[0]; const solo = trace(T.E, [T.mirrors[0]], []); T.beam = solo.pts; T.beamT = 0; T.anim = { mode: "test", t: 0, dur: 1 };
+    const i = Math.round(solo.hits[0] ? solo.hits[0].i : 0);
+    return { raw: { i, r: i }, cells: [`${AR(i)}°`, `${AR(i)}°`], key: T.vals[0] };
+  },
+  options() { return { q: "ماذا تلاحظين في القراءات؟", opts: [
+    { t: "زاوية الانعكاس تساوي زاوية السقوط", ok: true }, { t: "زاوية الانعكاس ضعف زاوية السقوط", ok: false, why: 2 }, { t: "لا علاقة بين الزاويتين", ok: false, why: 0 }] }; },
+  wrong(T, o, rows) { const r = rows[rows.length - 1].raw; return o.why === 2 ? `في آخر قراءة: i = ${AR(r.i)}° فلو كانت r ضعفها لبلغت ${AR(r.i * 2)}°، لكن الجدول يُظهر ${AR(r.r)}°.` : `قارني الصفوف: كلما تغيّرت i تغيّرت r بالقدر نفسه، فالعلاقة واضحة.`; },
+  act(T) {
+    const res = lightSolved(T, T.vals); T.beam = res.r.pts; T.anim = { mode: "act", t: 0, dur: 1.1, ok: res.ok, miss: res.r.hits.length < T.mirrors.length };
+  },
+  update(T, dt) {
+    const an = T.anim; if (!an) return; an.t += dt; T.beamT = Math.min(1, an.t / .7);
+    if (an.t >= an.dur) { T.anim = null; if (an.mode === "test") Eng.testDone(); else { if (an.ok) T.hit = true; Eng.actDone(an.ok, an.miss ? "الشعاع لم يصل إلى كل المرايا." : "مرّ الشعاع بجانب المستشعر. عدّلي الزوايا قليلًا."); } }
+  },
+  busy: T => !!T.anim,
+  draw(c, T, ph) {
+    const act = ph === "act", ms = act ? T.mirrors : [T.mirrors[0]];
+    if (act) ms.forEach((m, i) => m.phi = T.vals[i]); else T.mirrors[0].phi = T.vals[0];
+    const E = T.E; c.drawImage(IMG.emitter, E.x - 70, E.y - 60, 130, 130);
+    T.walls.forEach(w => { if (act) c.drawImage(IMG.wall, w.x1 - 60, w.y1 - 10, 120, w.y2 - w.y1 + 12); });
+    if (act) c.drawImage(T.hit ? IMG.sensorOn : IMG.sensorOff, T.sensor.x - 56, T.sensor.y - 56, 112, 112);
+    if (T.beam && T.beamT > 0) {
+      const pts = T.beam; let total = 0; for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+      let left = total * T.beamT; c.save(); c.lineCap = "round";
+      for (const [w, col] of [[14, "rgba(255,200,61,.25)"], [5, "#FFE08A"]]) {
+        c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(pts[0].x, pts[0].y); let l = left;
+        for (let i = 1; i < pts.length && l > 0; i++) { const d = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y), f = Math.min(1, l / d); c.lineTo(pts[i - 1].x + (pts[i].x - pts[i - 1].x) * f, pts[i - 1].y + (pts[i].y - pts[i - 1].y) * f); l -= d; }
+        c.stroke();
+      } c.restore();
+    }
+    ms.forEach(m => { const u = { x: Math.cos(rad(m.phi)), y: -Math.sin(rad(m.phi)) };
+      c.save(); c.lineCap = "round"; c.strokeStyle = "#1c2a4a"; c.lineWidth = 16; c.beginPath(); c.moveTo(m.x - u.x * m.len / 2, m.y - u.y * m.len / 2); c.lineTo(m.x + u.x * m.len / 2, m.y + u.y * m.len / 2); c.stroke();
+      c.strokeStyle = "#BFEFFF"; c.lineWidth = 8; c.stroke(); c.fillStyle = "#FFC83D"; c.beginPath(); c.arc(m.x, m.y, 9, 0, 7); c.fill(); c.restore(); });
+  },
+  hint: "قِسي الزاوية بين الشعاع والعمودي على المرآة. الارتداد يحفظ هذه الزاوية. غيّري زاوية المرآة فتدور الزاوية المنعكسة ضعف ما دارت المرآة.",
+  robot: { x: 1330, gy: GY }
+};
+
+function gpath(M, v) {
+  const dth = 20 * M / (v * v), pts = []; let y = 650;
+  for (let x = 330; x <= 1700; x += 5) { const s = ease(clamp((x - 500) / 500, 0, 1)); pts.push({ x, y }); y -= Math.tan(rad(dth * s)) * 5; }
+  return { pts, dth };
+}
+KINDS.gravity = {
+  scene: "gravity", cols: ["السرعة v", "الانحراف Δθ"], panel: "left",
+  make(level) {
+    const M = rnd([2, 3, 4]), opts = [1.5, 2, 2.5, 3].filter(v => { const d = 20 * M / (v * v); return d >= 8 && d <= 30; }), vs = rnd(opts);
+    const path = gpath(M, vs), ringY = path.pts.find(p => p.x >= 1300).y, ast = [];
+    if (level >= 2) ast.push({ x: 1300, y: ringY - 130, k: "astA", s: 90 });
+    if (level >= 3) ast.push({ x: 1300, y: ringY + 135, k: "astB", s: 80 }, { x: 1010, y: path.pts.find(p => p.x >= 1010).y + 120, k: "astC", s: 70 });
+    return { M, vs, ring: { x: 1300, y: ringY }, ast, anim: null, trail: null, hit: false, dthT: Math.round(path.dth * 10) / 10,
+      sliders: [{ label: "سرعة الإطلاق v", min: 1, max: 10, step: .5, val: 5 }], vals: [5], goal: `الانحراف المطلوب تقريبًا Δθ ≈ ${AR(Math.round(path.dth * 10) / 10)}°`, cellsAt: SPOTS.gravity };
+  },
+  launch(T, v, lim) {
+    const p = gpath(T.M, v); let end = p.pts.length - 1, res = "out"; const act = lim === undefined;
+    for (let i = 0; i < p.pts.length; i++) { const q = p.pts[i];
+      if (!act && q.x > 1100) { end = i; res = "test"; break; }
+      if (act) {
+        if (T.ast.some(a => Math.hypot(q.x - a.x, q.y - a.y) < a.s * .55 + 12)) { end = i; res = "ast"; break; }
+        if (Math.hypot(q.x - T.ring.x, q.y - T.ring.y) <= 42) { end = i; res = "ring"; break; }
+        if (q.y < 20) { end = i; res = "out"; break; }
+        if (Math.hypot(q.x - 750, q.y - 240) < 110) { end = i; res = "planet"; break; }
+      } }
+    return { pts: p.pts.slice(0, end + 1), res, dth: p.dth };
+  },
+  measure(T) { const L = this.launch(T, T.vals[0], 1), d = Math.round(L.dth * 10) / 10; T.trail = L.pts; T.anim = { mode: "test", t: 0, dur: 1.2, res: L.res };
+    return { raw: { v: T.vals[0], d }, cells: [AR(T.vals[0]), `${AR(d)}°`], key: T.vals[0] }; },
+  options() { return { q: "ما العلاقة بين سرعة المسبار وانحرافه؟", opts: [
+    { t: "الانحراف يتناسب مع 1/v²: ضعف السرعة يعني ربع الانحراف", ok: true }, { t: "الانحراف يتناسب مع 1/v: ضعف السرعة يعني نصف الانحراف", ok: false, why: 1 }, { t: "الانحراف لا يعتمد على السرعة", ok: false, why: 0 }] }; },
+  wrong(T, o, rows) { const a = rows[0].raw, b = rows[rows.length - 1].raw; return o.why === 0 ? `انظري: عند v=${AR(a.v)} كان الانحراف ${AR(a.d)}° وعند v=${AR(b.v)} كان ${AR(b.d)}°، إذن السرعة تؤثّر.` : `قارني ${AR(a.d)}° عند v=${AR(a.v)} و${AR(b.d)}° عند v=${AR(b.v)}: احسبي Δθ×v² و Δθ×v في الصفين، أيّهما يبقى ثابتًا؟`; },
+  act(T) { const L = this.launch(T, T.vals[0]); T.trail = L.pts; T.anim = { mode: "act", t: 0, dur: 1.8, res: L.res, last: L.pts[L.pts.length - 1] }; },
+  update(T, dt) {
+    const an = T.anim; if (!an) return; an.t += dt;
+    if (an.t >= an.dur) { T.anim = null; if (an.mode === "test") Eng.testDone(); else if (an.res === "ring") { T.hit = true; Eng.actDone(true); } else {
+      const dy = an.last.y - T.ring.y; Eng.actDone(false, an.res === "ast" ? "اصطدم المسبار بكويكب." : an.res === "planet" ? "اصطدم المسبار بالكوكب." : (dy < 0 ? "مرّ المسبار فوق الحلقة: انحراف أكبر من اللازم." : "مرّ المسبار تحت الحلقة: انحراف أقل من اللازم.")); } }
+  },
+  busy: T => !!T.anim,
+  draw(c, T, ph) {
+    const act = ph === "act"; c.drawImage(IMG.planetU, 750 - 130, 240 - 130, 260, 260);
+    c.save(); c.strokeStyle = "rgba(255,255,255,.18)"; c.setLineDash([8, 14]); c.lineWidth = 3; c.beginPath(); c.moveTo(330, 650); c.lineTo(500, 650); c.stroke(); c.restore();
+    if (act) { T.ast.forEach(a => c.drawImage(IMG[a.k], a.x - a.s, a.y - a.s * .9, a.s * 2, a.s * 1.8)); c.drawImage(IMG.ring, T.ring.x - 70, T.ring.y - 70, 140, 140); }
+    let pos = { x: 330, y: 650 }, ang = 0;
+    if (T.trail) {
+      const f = T.anim ? Math.min(1, T.anim.t / T.anim.dur) : 1, n = Math.max(1, Math.floor((T.trail.length - 1) * f));
+      c.save(); c.strokeStyle = "rgba(255,224,138,.8)"; c.lineWidth = 5; c.setLineDash([2, 12]); c.lineCap = "round"; c.beginPath(); c.moveTo(T.trail[0].x, T.trail[0].y);
+      for (let i = 1; i <= n; i++) c.lineTo(T.trail[i].x, T.trail[i].y); c.stroke(); c.restore();
+      pos = T.trail[n]; const pv = T.trail[Math.max(0, n - 2)]; ang = Math.atan2(pos.y - pv.y, pos.x - pv.x);
+    }
+    c.save(); c.translate(pos.x, pos.y); c.rotate(ang); c.drawImage(IMG.probe, -55, -46, 110, 92); c.restore();
+  },
+  hint: "إذا ضاعفتِ السرعة صار الانحراف الربع. احسبي Δθ×v² من قراءتك: هذا الثابت يعطيك السرعة المطلوبة: v = √(ثابت ÷ Δθ).",
+  robot: { x: 150, gy: 840 }
+};
+
+/* ============ المحرّك ============ */
+const Eng = {
+  w: null, wi: 0, si: 0, ti: 0, tasks: null, T: null, K: null, energy: 10, phase: "idle", rows: [], cells: [], fx: [], t: 0,
+  robot: { s: "idle", hold: 0 }, losses: 0, lawOk: false, hintUsed: false, solved: false, locked: false,
+  start(wi, si) {
+    this.wi = wi; this.si = si; this.w = WORLDS[wi]; this.energy = ENERGY_MAX; this.ti = 0; this.solved = false; this.locked = false;
+    const key = `${wi}-${si}`; this.losses = Save.d.losses[key] || 0;
+    this.tasks = this.w.stages[si].tasks; this.beginTask(); 
+  },
+  beginTask() {
+    const d = this.tasks[this.ti]; this.K = KINDS[d.kind]; this.T = this.K.make(d.level); this.rows = []; this.fx = [];
+    const n = this.tasks.length > 1 ? 2 : 4; this.cells = shuffle(this.K.cellsAt || this.T.cellsAt).slice(0, n).map(p => ({ x: p[0], y: p[1], got: false }));
+    this.hintUsed = false; this.phase = this.w.id === 4 ? "law" : "measure"; UI.onPhase();
+  },
+  setRobot(s, hold = 1.2) { this.robot.s = s; this.robot.hold = hold; },
+  gain(n) { this.energy = clamp(this.energy + n, 0, ENERGY_MAX); UI.energy(); },
+  spend(n, why) { this.energy = Math.max(0, this.energy - n); UI.energy(); this.fx.push({ x: 1370, y: 300, t: 0, txt: `−${AR(n)}`, col: "#ff6b6b" }); SFX.bad(); if (this.energy <= 0) this.lose(); },
+  collect(x, y) {
+    if (this.locked || this.phase === "law") return;
+    for (const c of this.cells) if (!c.got && Math.hypot(c.x - x, c.y - y) < 70) { c.got = true; this.gain(3); SFX.collect(); this.fx.push({ x: c.x, y: c.y - 40, t: 0, txt: "+٣", col: "#5CE08A" }); this.setRobot("success", .8); return; }
+  },
+  chooseLaw(kind) {
+    if (kind === this.tasks[this.ti].kind) { this.phase = "measure"; SFX.good(); UI.onPhase(); UI.toast("صحيح! الآن قيسي."); }
+    else { this.spend(1); UI.toast("ليس هذا القانون المناسب لهذا المشهد (−١ طاقة)."); this.setRobot("think", 1); }
+  },
+  test() {
+    if (this.K.busy(this.T) || this.phase !== "measure") return;
+    const r = this.K.measure(this.T); this.rows.push(r); this.setRobot("scan", 2); SFX.test(); UI.panel(); UI.controls();
+  },
+  testDone() { UI.controls(); },
+  canDeduce() { const ks = new Set(this.rows.map(r => r.key)); return ks.size >= 2; },
+  deduce() { if (this.K.busy(this.T)) return; if (!this.canDeduce()) { UI.toast("قيسي مرتين على الأقل بقيم مختلفة."); return; } this.setRobot("think", 99); UI.deduceModal(this.K.options(this.T)); },
+  answer(o) {
+    if (o.ok) { this.phase = "act"; this.setRobot("success", 1.2); SFX.law(); UI.closeModal(); UI.lawReveal(this.tasks[this.ti].kind); UI.onPhase(); }
+    else { const m = this.K.wrong(this.T, o, this.rows); this.spend(2); UI.wrongAnswer(m); this.setRobot("fail", 1.5); }
+  },
+  act() {
+    if (this.K.busy(this.T) || this.phase !== "act" || this.locked) return;
+    this.K.act(this.T); this.setRobot(this.K.scene === "force" ? "push" : "scan", 3); UI.controls();
+  },
+  actDone(ok, msg) {
+    if (ok) { SFX.good(); this.setRobot("success", 1.4); const last = this.ti >= this.tasks.length - 1; this.locked = true;
+      setTimeout(() => { if (last) this.win(); else { this.ti++; this.locked = false; this.beginTask(); } }, 1100); if (!last) UI.toast("أحسنتِ! المهمة التالية…"); }
+    else { this.setRobot("fail", 1.3); UI.toast(msg || "لم تنجح المحاولة (−١ طاقة)."); this.spend(1); UI.controls(); }
+  },
+  win() {
+    const stars = this.energy >= 6 ? 3 : this.energy >= 3 ? 2 : 1; Save.set(`${this.wi}-${this.si}`, stars); Save.d.losses[`${this.wi}-${this.si}`] = 0; Save.save(); SFX.win(); this.phase = "done"; UI.winModal(stars);
+  },
+  lose() { if (this.phase === "done") return; this.phase = "done"; this.locked = true; const key = `${this.wi}-${this.si}`; this.losses++; Save.d.losses[key] = this.losses; Save.save(); SFX.lose(); this.setRobot("fail", 99); setTimeout(() => UI.loseModal(), 500); },
+  hint() {
+    if (this.phase === "done") return; const free = this.losses >= 2 || this.hintUsed;
+    if (!free) { if (this.energy <= 1) { UI.toast("طاقتك لا تكفي للتلميح."); return; } this.spend(1); }
+    this.hintUsed = true; UI.hintModal(this.K.hint, free);
+  },
+  update(dt) {
+    this.t += dt; if (!this.T) return;
+    const r = this.robot; if (r.hold > 0) { r.hold -= dt; if (r.hold <= 0) r.s = "idle"; }
+    this.K.update(this.T, dt); this.fx.forEach(f => f.t += dt); this.fx = this.fx.filter(f => f.t < 1.2);
+  },
+  draw(c) {
+    c.clearRect(0, 0, W, H); const w = this.w; if (!w || !this.T) return;
+    c.drawImage(IMG["bg" + w.id], 0, 0, W, H);
+    if (w.gt) for (let x = 0; x < W; x += 600) c.drawImage(IMG[w.gt], x, GY, 600, 220);
+    this.K.draw(c, this.T, this.phase);
+    this.cells.forEach((p, i) => { if (!p.got) { const bob = Math.sin(this.t * 3 + i) * 6; c.drawImage(IMG.pickup, p.x - 38, p.y - 45 + bob, 76, 90); } });
+    this.drawRobot(c);
+    this.fx.forEach(f => { c.save(); c.globalAlpha = 1 - f.t / 1.2; c.fillStyle = f.col; c.font = "800 44px Cairo"; c.textAlign = "center"; c.fillText(f.txt, f.x, f.y - f.t * 60); c.restore(); });
+  },
+  drawRobot(c) {
+    let s = this.robot.s; if (s === "idle" && this.energy <= 3 && this.phase !== "done") s = "low"; if (this.phase === "measure" && s === "idle" && this.K.busy(this.T)) s = "scan";
+    if (this.phase === "deduce") s = "think"; const n = ROBOT[s]; const f = (Math.floor(this.t * 6) % n) + 1, im = IMG[`r_${s}_${f}`]; if (!im) return;
+    const R = this.K.robot, w = 300, h = w * im.height / im.width; c.save(); c.translate(R.x, R.gy); c.scale(-1, 1); c.drawImage(im, -w / 2, -222 * (w / 300), w, h); c.restore();
+  }
+};
