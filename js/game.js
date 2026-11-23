@@ -44,19 +44,19 @@ function lightSolved(T, phis) {
 const KINDS = {};
 
 KINDS.force = {
-  scene: "force", cols: ["القوة F", "التسارع a"], panel: "right",
+  scene: "force", get cols() { return [L("القوة F", "Force F"), L("التسارع a", "Accel. a")]; }, panel: "right",
   make(level) {
     const m = rnd([2, 4, 5]), aT = [1, 1.5, 2][level - 1], x0 = 1100;
     return { m, aT, x0, gateX: x0 - 400 * aT, cx: x0, anim: null, open: false,
-      sliders: [{ label: "القوة F (نيوتن)", min: 1, max: 10, step: .5, val: 5 }], vals: [5],
-      goal: `الهدف: تسارع a = ${AR(aT)} م/ث²` , cellsAt: SPOTS.force };
+      sliders: [{ label: L("القوة F (نيوتن)", "Force F (N)"), min: 1, max: 10, step: .5, val: 5 }], vals: [5],
+      goal: L(`الهدف: تسارع a = ${AR(aT)} م/ث²`, `Goal: acceleration a = ${AR(aT)} m/s²`) , cellsAt: SPOTS.force };
   },
   measure(T) {
     const F = T.vals[0], a = F / T.m; T.anim = { mode: "test", a, t: 0, dur: 1.1 };
     return { raw: { F, a }, cells: [AR(F), AR(a)], key: F };
   },
-  options(T) { return { q: "من القراءات، كم تبلغ كتلة الصندوق؟", opts: [2, 4, 5].map(m => ({ t: `${AR(m)} كغ`, ok: m === T.m, why: m })) }; },
-  wrong(T, o, rows) { const r = rows[rows.length - 1].raw; return `لو كانت الكتلة ${AR(o.why)} كغ لأعطت القوة ${AR(r.F)}N تسارعًا ${AR(r.F / o.why)}، لكنك قِستِ ${AR(r.a)}.`; },
+  options(T) { return { q: L("من القراءات، كم تبلغ كتلة الصندوق؟", "From your readings, what is the crate's mass?"), opts: [2, 4, 5].map(m => ({ t: L(`${AR(m)} كغ`, `${AR(m)} kg`), ok: m === T.m, why: m })) }; },
+  wrong(T, o, rows) { const r = rows[rows.length - 1].raw; return L(`لو كانت الكتلة ${AR(o.why)} كغ لأعطت القوة ${AR(r.F)}N تسارعًا ${AR(r.F / o.why)}، لكنك قِستِ ${AR(r.a)}.`, `If the mass were ${AR(o.why)} kg, a force of ${AR(r.F)} N would give an acceleration of ${AR(r.F / o.why)}, but you measured ${AR(r.a)}.`); },
   act(T) { const a = T.vals[0] / T.m; T.anim = { mode: "act", a, t: 0, dur: 2 }; },
   update(T, dt) {
     const an = T.anim; if (!an) return; an.t += dt;
@@ -65,7 +65,7 @@ KINDS.force = {
     if (an.t >= an.dur) {
       T.anim = null;
       if (an.mode === "test") { T.cx = T.x0; Eng.testDone(); }
-      else { const ok = Math.abs(T.cx - T.gateX) <= 70; if (ok) T.open = true; Eng.actDone(ok, T.cx > T.gateX ? "توقف الصندوق قبل البوابة: تسارع أقل من المطلوب." : "اندفع الصندوق متجاوزًا البوابة: تسارع أكبر من المطلوب."); }
+      else { const ok = Math.abs(T.cx - T.gateX) <= 70; if (ok) T.open = true; Eng.actDone(ok, T.cx > T.gateX ? L("توقف الصندوق قبل البوابة: تسارع أقل من المطلوب.", "The crate stopped short of the gate: acceleration too low.") : L("اندفع الصندوق متجاوزًا البوابة: تسارع أكبر من المطلوب.", "The crate overshot the gate: acceleration too high.")); }
     }
   },
   busy: T => !!T.anim,
@@ -75,12 +75,12 @@ KINDS.force = {
     c.drawImage(IMG.crate1, T.cx - 80, GY - 160 + 12, 160, 160);
     if (ph === "act") { c.strokeStyle = "rgba(255,200,61,.6)"; c.setLineDash([10, 10]); c.lineWidth = 3; c.beginPath(); c.moveTo(T.gateX, GY + 28); c.lineTo(T.x0, GY + 28); c.stroke(); c.setLineDash([]); }
   },
-  hint: "a = F ÷ m. غيّري القوة وقارني التسارع: النسبة F÷a ثابتة وتساوي الكتلة.",
+  get hint() { return L("a = F ÷ m. غيّري القوة وقارني التسارع: النسبة F÷a ثابتة وتساوي الكتلة.", "a = F ÷ m. Change the force and compare the acceleration: the ratio F÷a stays constant and equals the mass."); },
   robot: { x: 1330, gy: GY }
 };
 
 KINDS.light = {
-  scene: "light", cols: ["سقوط i", "انعكاس r"], panel: "right",
+  scene: "light", get cols() { return [L("سقوط i", "Incidence i"), L("انعكاس r", "Reflection r")]; }, panel: "right",
   make(level) {
     for (let tries = 0; tries < 2000; tries++) {
       const E = { x: 230, y: 620, th: 0 }, M = [{ x: level === 1 ? 620 : 560, y: 620, len: 160 }];
@@ -98,8 +98,8 @@ KINDS.light = {
       if (level >= 2 && Math.hypot(sensor.x - M[1].x, sensor.y - M[1].y) < 200) continue;
       if (!lightSolved(T, sol).ok) continue;
       const rad0 = M.map(() => 45);
-      Object.assign(T, { sol, level, anim: null, beam: null, hit: false, goal: "الهدف: وجّهي الشعاع إلى المستشعر",
-        sliders: M.map((m, i) => ({ label: M.length > 1 ? `المرآة ${AR(i + 1)} (درجة)` : "زاوية المرآة (درجة)", min: 0, max: i === 0 ? 90 : 180, step: 1, val: rad0[i] })),
+      Object.assign(T, { sol, level, anim: null, beam: null, hit: false, goal: L("الهدف: وجّهي الشعاع إلى المستشعر", "Goal: aim the beam at the sensor"),
+        sliders: M.map((m, i) => ({ label: M.length > 1 ? L(`المرآة ${AR(i + 1)} (درجة)`, `Mirror ${AR(i + 1)} (deg)`) : L("زاوية المرآة (درجة)", "Mirror angle (deg)"), min: 0, max: i === 0 ? 90 : 180, step: 1, val: rad0[i] })),
         vals: rad0.slice(), cellsAt: SPOTS.light });
       M.forEach((m, i) => m.phi = T.vals[i]);
       return T;
@@ -111,15 +111,15 @@ KINDS.light = {
     const i = Math.round(solo.hits[0] ? solo.hits[0].i : 0);
     return { raw: { i, r: i }, cells: [`${AR(i)}°`, `${AR(i)}°`], key: T.vals[0] };
   },
-  options() { return { q: "ماذا تلاحظين في القراءات؟", opts: [
-    { t: "زاوية الانعكاس تساوي زاوية السقوط", ok: true }, { t: "زاوية الانعكاس ضعف زاوية السقوط", ok: false, why: 2 }, { t: "لا علاقة بين الزاويتين", ok: false, why: 0 }] }; },
-  wrong(T, o, rows) { const r = rows[rows.length - 1].raw; return o.why === 2 ? `في آخر قراءة: i = ${AR(r.i)}° فلو كانت r ضعفها لبلغت ${AR(r.i * 2)}°، لكن الجدول يُظهر ${AR(r.r)}°.` : `قارني الصفوف: كلما تغيّرت i تغيّرت r بالقدر نفسه، فالعلاقة واضحة.`; },
+  options() { return { q: L("ماذا تلاحظين في القراءات؟", "What do you notice in the readings?"), opts: [
+    { t: L("زاوية الانعكاس تساوي زاوية السقوط", "The angle of reflection equals the angle of incidence"), ok: true }, { t: L("زاوية الانعكاس ضعف زاوية السقوط", "The angle of reflection is double the angle of incidence"), ok: false, why: 2 }, { t: L("لا علاقة بين الزاويتين", "The two angles are unrelated"), ok: false, why: 0 }] }; },
+  wrong(T, o, rows) { const r = rows[rows.length - 1].raw; return o.why === 2 ? L(`في آخر قراءة: i = ${AR(r.i)}° فلو كانت r ضعفها لبلغت ${AR(r.i * 2)}°، لكن الجدول يُظهر ${AR(r.r)}°.`, `In your last reading i = ${AR(r.i)}°, so r would be ${AR(r.i * 2)}° if it were double, but the table shows ${AR(r.r)}°.`) : L(`قارني الصفوف: كلما تغيّرت i تغيّرت r بالقدر نفسه، فالعلاقة واضحة.`, `Compare the rows: whenever i changes, r changes by the same amount, so they are clearly related.`); },
   act(T) {
     const res = lightSolved(T, T.vals); T.beam = res.r.pts; T.anim = { mode: "act", t: 0, dur: 1.1, ok: res.ok, miss: res.r.hits.length < T.mirrors.length };
   },
   update(T, dt) {
     const an = T.anim; if (!an) return; an.t += dt; T.beamT = Math.min(1, an.t / .7);
-    if (an.t >= an.dur) { T.anim = null; if (an.mode === "test") Eng.testDone(); else { if (an.ok) T.hit = true; Eng.actDone(an.ok, an.miss ? "الشعاع لم يصل إلى كل المرايا." : "مرّ الشعاع بجانب المستشعر. عدّلي الزوايا قليلًا."); } }
+    if (an.t >= an.dur) { T.anim = null; if (an.mode === "test") Eng.testDone(); else { if (an.ok) T.hit = true; Eng.actDone(an.ok, an.miss ? L("الشعاع لم يصل إلى كل المرايا.", "The beam did not reach every mirror.") : L("مرّ الشعاع بجانب المستشعر. عدّلي الزوايا قليلًا.", "The beam passed beside the sensor. Adjust the angles a little.")); } }
   },
   busy: T => !!T.anim,
   draw(c, T, ph) {
@@ -141,7 +141,7 @@ KINDS.light = {
       c.save(); c.lineCap = "round"; c.strokeStyle = "#1c2a4a"; c.lineWidth = 16; c.beginPath(); c.moveTo(m.x - u.x * m.len / 2, m.y - u.y * m.len / 2); c.lineTo(m.x + u.x * m.len / 2, m.y + u.y * m.len / 2); c.stroke();
       c.strokeStyle = "#BFEFFF"; c.lineWidth = 8; c.stroke(); c.fillStyle = "#FFC83D"; c.beginPath(); c.arc(m.x, m.y, 9, 0, 7); c.fill(); c.restore(); });
   },
-  hint: "قِسي الزاوية بين الشعاع والعمودي على المرآة. الارتداد يحفظ هذه الزاوية. غيّري زاوية المرآة فتدور الزاوية المنعكسة ضعف ما دارت المرآة.",
+  get hint() { return L("قِسي الزاوية بين الشعاع والعمودي على المرآة. الارتداد يحفظ هذه الزاوية. غيّري زاوية المرآة فتدور الزاوية المنعكسة ضعف ما دارت المرآة.", "Measure the angle between the beam and the normal to the mirror. Reflection keeps this angle. Rotate the mirror and the reflected beam turns twice as much."); },
   robot: { x: 1330, gy: GY }
 };
 
@@ -151,14 +151,14 @@ function gpath(M, v) {
   return { pts, dth };
 }
 KINDS.gravity = {
-  scene: "gravity", cols: ["السرعة v", "الانحراف Δθ"], panel: "left",
+  scene: "gravity", get cols() { return [L("السرعة v", "Speed v"), L("الانحراف Δθ", "Deflection Δθ")]; }, panel: "left",
   make(level) {
     const M = rnd([2, 3, 4]), opts = [1.5, 2, 2.5, 3].filter(v => { const d = 20 * M / (v * v); return d >= 8 && d <= 30; }), vs = rnd(opts);
     const path = gpath(M, vs), ringY = path.pts.find(p => p.x >= 1300).y, ast = [];
     if (level >= 2) ast.push({ x: 1300, y: ringY - 130, k: "astA", s: 90 });
     if (level >= 3) ast.push({ x: 1300, y: ringY + 135, k: "astB", s: 80 }, { x: 1010, y: path.pts.find(p => p.x >= 1010).y + 120, k: "astC", s: 70 });
     return { M, vs, ring: { x: 1300, y: ringY }, ast, anim: null, trail: null, hit: false, dthT: Math.round(path.dth * 10) / 10,
-      sliders: [{ label: "سرعة الإطلاق v", min: 1, max: 10, step: .5, val: 5 }], vals: [5], goal: `الانحراف المطلوب تقريبًا Δθ ≈ ${AR(Math.round(path.dth * 10) / 10)}°`, cellsAt: SPOTS.gravity };
+      sliders: [{ label: L("سرعة الإطلاق v", "Launch speed v"), min: 1, max: 10, step: .5, val: 5 }], vals: [5], goal: L(`الانحراف المطلوب تقريبًا Δθ ≈ ${AR(Math.round(path.dth * 10) / 10)}°`, `Required deflection Δθ ≈ ${AR(Math.round(path.dth * 10) / 10)}°`), cellsAt: SPOTS.gravity };
   },
   launch(T, v, lim) {
     const p = gpath(T.M, v); let end = p.pts.length - 1, res = "out"; const act = lim === undefined;
@@ -174,14 +174,14 @@ KINDS.gravity = {
   },
   measure(T) { const L = this.launch(T, T.vals[0], 1), d = Math.round(L.dth * 10) / 10; T.trail = L.pts; T.anim = { mode: "test", t: 0, dur: 1.2, res: L.res };
     return { raw: { v: T.vals[0], d }, cells: [AR(T.vals[0]), `${AR(d)}°`], key: T.vals[0] }; },
-  options() { return { q: "ما العلاقة بين سرعة المسبار وانحرافه؟", opts: [
-    { t: "الانحراف يتناسب مع 1/v²: ضعف السرعة يعني ربع الانحراف", ok: true }, { t: "الانحراف يتناسب مع 1/v: ضعف السرعة يعني نصف الانحراف", ok: false, why: 1 }, { t: "الانحراف لا يعتمد على السرعة", ok: false, why: 0 }] }; },
-  wrong(T, o, rows) { const a = rows[0].raw, b = rows[rows.length - 1].raw; return o.why === 0 ? `انظري: عند v=${AR(a.v)} كان الانحراف ${AR(a.d)}° وعند v=${AR(b.v)} كان ${AR(b.d)}°، إذن السرعة تؤثّر.` : `قارني ${AR(a.d)}° عند v=${AR(a.v)} و${AR(b.d)}° عند v=${AR(b.v)}: احسبي Δθ×v² و Δθ×v في الصفين، أيّهما يبقى ثابتًا؟`; },
+  options() { return { q: L("ما العلاقة بين سرعة المسبار وانحرافه؟", "What is the relation between the probe's speed and its deflection?"), opts: [
+    { t: L("الانحراف يتناسب مع 1/v²: ضعف السرعة يعني ربع الانحراف", "Deflection ∝ 1/v²: double the speed means a quarter of the deflection"), ok: true }, { t: L("الانحراف يتناسب مع 1/v: ضعف السرعة يعني نصف الانحراف", "Deflection ∝ 1/v: double the speed means half the deflection"), ok: false, why: 1 }, { t: L("الانحراف لا يعتمد على السرعة", "Deflection does not depend on speed"), ok: false, why: 0 }] }; },
+  wrong(T, o, rows) { const a = rows[0].raw, b = rows[rows.length - 1].raw; return o.why === 0 ? L(`انظري: عند v=${AR(a.v)} كان الانحراف ${AR(a.d)}° وعند v=${AR(b.v)} كان ${AR(b.d)}°، إذن السرعة تؤثّر.`, `Look: at v=${AR(a.v)} the deflection was ${AR(a.d)}° and at v=${AR(b.v)} it was ${AR(b.d)}°, so speed matters.`) : L(`قارني ${AR(a.d)}° عند v=${AR(a.v)} و${AR(b.d)}° عند v=${AR(b.v)}: احسبي Δθ×v² و Δθ×v في الصفين، أيّهما يبقى ثابتًا؟`, `Compare ${AR(a.d)}° at v=${AR(a.v)} with ${AR(b.d)}° at v=${AR(b.v)}: compute Δθ×v² and Δθ×v for both rows. Which stays constant?`); },
   act(T) { const L = this.launch(T, T.vals[0]); T.trail = L.pts; T.anim = { mode: "act", t: 0, dur: 1.8, res: L.res, last: L.pts[L.pts.length - 1] }; },
   update(T, dt) {
     const an = T.anim; if (!an) return; an.t += dt;
     if (an.t >= an.dur) { T.anim = null; if (an.mode === "test") Eng.testDone(); else if (an.res === "ring") { T.hit = true; Eng.actDone(true); } else {
-      const dy = an.last.y - T.ring.y; Eng.actDone(false, an.res === "ast" ? "اصطدم المسبار بكويكب." : an.res === "planet" ? "اصطدم المسبار بالكوكب." : (dy < 0 ? "مرّ المسبار فوق الحلقة: انحراف أكبر من اللازم." : "مرّ المسبار تحت الحلقة: انحراف أقل من اللازم.")); } }
+      const dy = an.last.y - T.ring.y; Eng.actDone(false, an.res === "ast" ? L("اصطدم المسبار بكويكب.", "The probe hit an asteroid.") : an.res === "planet" ? L("اصطدم المسبار بالكوكب.", "The probe hit the planet.") : (dy < 0 ? L("مرّ المسبار فوق الحلقة: انحراف أكبر من اللازم.", "The probe passed above the ring: too much deflection.") : L("مرّ المسبار تحت الحلقة: انحراف أقل من اللازم.", "The probe passed below the ring: too little deflection."))); } }
   },
   busy: T => !!T.anim,
   draw(c, T, ph) {
@@ -197,7 +197,7 @@ KINDS.gravity = {
     }
     c.save(); c.translate(pos.x, pos.y); c.rotate(ang); c.drawImage(IMG.probe, -55, -46, 110, 92); c.restore();
   },
-  hint: "إذا ضاعفتِ السرعة صار الانحراف الربع. احسبي Δθ×v² من قراءتك: هذا الثابت يعطيك السرعة المطلوبة: v = √(ثابت ÷ Δθ).",
+  get hint() { return L("إذا ضاعفتِ السرعة صار الانحراف الربع. احسبي Δθ×v² من قراءتك: هذا الثابت يعطيك السرعة المطلوبة: v = √(ثابت ÷ Δθ).", "Doubling the speed makes the deflection a quarter. Compute Δθ×v² from your readings: this constant gives the needed speed: v = √(constant ÷ Δθ)."); },
   robot: { x: 150, gy: 730 }
 };
 
@@ -221,11 +221,11 @@ const Eng = {
   spend(n, why) { this.energy = Math.max(0, this.energy - n); UI.energy(); this.fx.push({ x: 1370, y: 300, t: 0, txt: `−${AR(n)}`, col: "#ff6b6b" }); SFX.bad(); if (this.energy <= 0) this.lose(); },
   collect(x, y, rr = 70) {
     if (this.locked || this.phase === "law" || this.phase === "done") return;
-    for (const c of this.cells) if (!c.got && Math.hypot(c.x - x, c.y - y) < rr) { c.got = true; this.gain(3); SFX.collect(); this.fx.push({ x: c.x, y: c.y - 40, t: 0, txt: "+٣", col: "#5CE08A" }); this.setRobot("success", .8); return; }
+    for (const c of this.cells) if (!c.got && Math.hypot(c.x - x, c.y - y) < rr) { c.got = true; this.gain(3); SFX.collect(); this.fx.push({ x: c.x, y: c.y - 40, t: 0, txt: L("+٣", "+3"), col: "#5CE08A" }); this.setRobot("success", .8); return; }
   },
   chooseLaw(kind) {
-    if (kind === this.tasks[this.ti].kind) { this.phase = "measure"; SFX.good(); UI.onPhase(); UI.toast("صحيح! الآن قيسي."); }
-    else { this.spend(1); UI.toast("ليس هذا القانون المناسب لهذا المشهد (−١ طاقة)."); this.setRobot("think", 1); }
+    if (kind === this.tasks[this.ti].kind) { this.phase = "measure"; SFX.good(); UI.onPhase(); UI.toast(L("صحيح! الآن قيسي.", "Correct! Now measure.")); }
+    else { this.spend(1); UI.toast(L("ليس هذا القانون المناسب لهذا المشهد (−١ طاقة).", "That is not the right law for this scene (−1 energy).")); this.setRobot("think", 1); }
   },
   test() {
     if (this.K.busy(this.T) || this.phase !== "measure") return;
@@ -233,7 +233,7 @@ const Eng = {
   },
   testDone() { UI.controls(); },
   canDeduce() { const ks = new Set(this.rows.map(r => r.key)); return ks.size >= 2; },
-  deduce() { if (this.K.busy(this.T)) return; if (!this.canDeduce()) { UI.toast("قيسي مرتين على الأقل بقيم مختلفة."); return; } this.setRobot("think", 99); UI.deduceModal(this.K.options(this.T)); },
+  deduce() { if (this.K.busy(this.T)) return; if (!this.canDeduce()) { UI.toast(L("قيسي مرتين على الأقل بقيم مختلفة.", "Measure at least twice with different values.")); return; } this.setRobot("think", 99); UI.deduceModal(this.K.options(this.T)); },
   answer(o) {
     if (o.ok) { this.phase = "act"; this.setRobot("success", 1.2); SFX.law(); UI.closeModal(); UI.lawReveal(this.tasks[this.ti].kind); UI.onPhase(); }
     else { const m = this.K.wrong(this.T, o, this.rows); this.spend(2); UI.wrongAnswer(m); this.setRobot("fail", 1.5); }
@@ -244,8 +244,8 @@ const Eng = {
   },
   actDone(ok, msg) {
     if (ok) { SFX.good(); this.setRobot("success", 1.4); const last = this.ti >= this.tasks.length - 1; this.locked = true;
-      setTimeout(() => { if (last) this.win(); else { this.ti++; this.locked = false; this.beginTask(); } }, 1100); if (!last) UI.toast("أحسنتِ! المهمة التالية…"); }
-    else { this.setRobot("fail", 1.3); UI.toast(msg || "لم تنجح المحاولة (−١ طاقة)."); this.spend(1); UI.controls(); }
+      setTimeout(() => { if (last) this.win(); else { this.ti++; this.locked = false; this.beginTask(); } }, 1100); if (!last) UI.toast(L("أحسنتِ! المهمة التالية…", "Well done! Next task…")); }
+    else { this.setRobot("fail", 1.3); UI.toast(msg || L("لم تنجح المحاولة (−١ طاقة).", "That attempt failed (−1 energy).")); this.spend(1); UI.controls(); }
   },
   win() {
     const stars = this.energy >= 6 ? 3 : this.energy >= 3 ? 2 : 1; Save.set(`${this.wi}-${this.si}`, stars); Save.d.losses[`${this.wi}-${this.si}`] = 0; Save.save(); SFX.win(); this.phase = "done"; UI.winModal(stars);
@@ -253,7 +253,7 @@ const Eng = {
   lose() { if (this.phase === "done") return; this.phase = "done"; this.locked = true; const key = `${this.wi}-${this.si}`; this.losses++; Save.d.losses[key] = this.losses; Save.save(); SFX.lose(); this.setRobot("fail", 99); setTimeout(() => UI.loseModal(), 500); },
   hint() {
     if (this.phase === "done") return; const free = this.losses >= 2 || this.hintUsed;
-    if (!free) { if (this.energy <= 1) { UI.toast("طاقتك لا تكفي للتلميح."); return; } this.spend(1); }
+    if (!free) { if (this.energy <= 1) { UI.toast(L("طاقتك لا تكفي للتلميح.", "Not enough energy for a hint.")); return; } this.spend(1); }
     this.hintUsed = true; UI.hintModal(this.K.hint, free);
   },
   update(dt) {

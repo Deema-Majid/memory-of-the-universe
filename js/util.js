@@ -5,7 +5,9 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
 const rnd = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-const AR = n => { const s = (Math.round(n * 10) / 10).toString(); return s.replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]).replace(".", "٫"); };
+let LANG = "ar";
+const L = (a, e) => LANG === "en" ? e : a;
+const AR = n => { if (LANG === "en") return String(Math.round(n * 10) / 10); const s = (Math.round(n * 10) / 10).toString(); return s.replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]).replace(".", "٫"); };
 const ease = t => t * t * (3 - 2 * t);
 
 /* ---------- تحميل الصور ---------- */
@@ -79,10 +81,10 @@ const SFX = {
 /* ---------- الحفظ ---------- */
 const SAVE_KEY = "dhakirat_alkawn_v1";
 const Save = {
-  d: { stars: {}, sound: true, story: false, losses: {} },
-  load() { try { Object.assign(this.d, JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")); } catch (e) { } SFX.on = this.d.sound !== false; },
+  d: { stars: {}, sound: true, story: false, losses: {}, profile: null, lang: "ar" },
+  load() { try { Object.assign(this.d, JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")); } catch (e) { } SFX.on = this.d.sound !== false; LANG = this.d.lang === "en" ? "en" : "ar"; },
   save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(this.d)); } catch (e) { } },
   stars(id) { return this.d.stars[id] || 0; },
   set(id, n) { if (n > this.stars(id)) this.d.stars[id] = n; this.save(); },
-  reset() { this.d = { stars: {}, sound: this.d.sound, story: false, losses: {} }; this.save(); }
+  reset() { this.d = { stars: {}, sound: this.d.sound, story: false, losses: {}, profile: this.d.profile, lang: this.d.lang }; this.save(); }
 };

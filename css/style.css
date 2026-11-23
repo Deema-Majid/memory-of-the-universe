@@ -22,7 +22,7 @@ html,body{height:100%;background:#0a0f24;overflow:hidden;font-family:Cairo,sans-
 #menu img.logo{width:560px;filter:drop-shadow(0 10px 30px #7B4DFF88)}
 #menu .row{display:flex;gap:20px;margin-top:20px}
 #menu p{margin-top:14px;font-size:24px;opacity:.8}
-.cards{display:flex;gap:26px;direction:rtl}
+.cards{display:flex;gap:26px}
 .card{width:340px;height:470px;border-radius:30px;border:4px solid #fff5;background-size:cover;background-position:center;position:relative;cursor:pointer;overflow:hidden;box-shadow:0 12px 30px #0008;transition:transform .15s}
 .card:hover{transform:translateY(-8px)}
 .card .sh{position:absolute;inset:0;background:linear-gradient(#0000 25%,#0b0f2bee 80%)}
@@ -105,3 +105,13 @@ input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;bac
 .sb:hover:not(.lock){transform:translateY(-6px)}
 #energy .ec{transition:background .3s,box-shadow .3s}
 .chip{transition:all .3s}
+#profile input[type=text]{font:700 36px Cairo;width:520px;padding:12px 24px;border-radius:20px;border:3px solid #FFC83D;background:#141a42;color:#fff;text-align:center;outline:none;user-select:text}
+.avs{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin:20px 0 26px}
+.av{width:130px;height:130px;border-radius:50%;border:5px solid #ffffff44;background:radial-gradient(#3a2f9a,#171c4f);cursor:pointer;padding:12px;transition:transform .15s,border-color .15s}
+.av img{width:100%;height:100%;object-fit:contain}
+.av:hover{transform:scale(1.08)}.av.on{border-color:#FFC83D;box-shadow:0 0 24px #FFC83D99;transform:scale(1.1)}
+.langs{display:flex;gap:14px;margin:6px 0 4px}
+.langs .btn.on{background:linear-gradient(#FFD65C,#F5A623);color:#2a1a00}
+#profile h2{margin-bottom:10px}#profile label{font-size:26px;opacity:.85;margin-top:14px}
+.me{position:absolute;top:22px;inset-inline-start:24px;display:flex;align-items:center;gap:12px;padding:8px 22px 8px 10px;border-radius:40px;background:#141a42cc;border:3px solid #ffffff33;font-size:28px;font-weight:700;cursor:pointer}
+.me img{width:56px;height:56px;border-radius:50%;background:#2a2f7a;padding:4px}
