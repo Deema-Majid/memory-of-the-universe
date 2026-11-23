@@ -4,7 +4,7 @@ const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const SPOTS = {
   force: [[330, 585], [520, 585], [760, 585], [980, 450], [640, 430], [1180, 585]],
   light: [[330, 300], [900, 230], [480, 500], [1040, 520], [300, 470], [1100, 360]],
-  gravity: [[480, 540], [900, 520], [620, 130], [1100, 150], [250, 380], [1000, 360]]
+  gravity: [[480, 540], [900, 520], [620, 130], [1100, 150], [560, 400], [1000, 360]]
 };
 
 /* ============ تتبّع الأشعة ============ */
@@ -198,7 +198,7 @@ KINDS.gravity = {
     c.save(); c.translate(pos.x, pos.y); c.rotate(ang); c.drawImage(IMG.probe, -55, -46, 110, 92); c.restore();
   },
   hint: "إذا ضاعفتِ السرعة صار الانحراف الربع. احسبي Δθ×v² من قراءتك: هذا الثابت يعطيك السرعة المطلوبة: v = √(ثابت ÷ Δθ).",
-  robot: { x: 150, gy: 840 }
+  robot: { x: 150, gy: 730 }
 };
 
 /* ============ المحرّك ============ */
@@ -272,6 +272,6 @@ const Eng = {
   drawRobot(c) {
     let s = this.robot.s; if (s === "idle" && this.energy <= 3 && this.phase !== "done") s = "low"; if (this.phase === "measure" && s === "idle" && this.K.busy(this.T)) s = "scan";
     if (this.phase === "deduce") s = "think"; const n = ROBOT[s]; const f = (Math.floor(this.t * 6) % n) + 1, im = IMG[`r_${s}_${f}`]; if (!im) return;
-    const R = this.K.robot, w = 300, h = w * im.height / im.width; c.save(); c.translate(R.x, R.gy); c.scale(-1, 1); c.drawImage(im, -w / 2, -222 * (w / 300), w, h); c.restore();
+    const R = this.K.robot, w = 300, h = w * im.height / im.width; c.save(); c.translate(R.x, this.w.gt ? Math.min(R.gy, GY) : R.gy); c.scale(-1, 1); c.drawImage(im, -w / 2, -222 * (w / 300), w, h); c.restore();
   }
 };
