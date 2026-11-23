@@ -205,6 +205,7 @@ const UI = {
   },
   /* ---------- HUD ---------- */
   onPhase() {
+    $("#hud").dataset.scene = Eng.K ? Eng.K.scene : "";
     const w = Eng.w, ph = Eng.phase, multi = Eng.tasks.length > 1;
     $("#title").textContent = Eng.sandbox ? `🧪 ${L("المختبر الحر", "Free lab")} · ${wt(w, "name")}` : `${wt(w, "name")} · ${AR(Eng.si + 1)}${multi ? ` (${AR(Eng.ti + 1)}/${AR(Eng.tasks.length)})` : ""}${Eng.code ? ` · 🏁 ${Eng.code}` : ""}`;
     $("#chips").style.display = Eng.sandbox || Eng.boss ? "none" : "";
@@ -278,16 +279,25 @@ const UI = {
     addEventListener("keydown", e => { if ($("#hud").classList.contains("hidden") || e.target.tagName === "INPUT" && e.target.type === "text") return; if (e.key === "Enter") { e.preventDefault(); if (!e.repeat) Eng.pressStart(); return; } const k = KM[e.key]; if (!k) return; e.preventDefault(); if (k === "g" && e.repeat) return; Eng.keys[k] = 1; Eng.idleT = 0; });
     addEventListener("keyup", e => { if (e.key === "Enter" && !$("#hud").classList.contains("hidden")) { Eng.pressEnd(); return; } const k = KM[e.key]; if (k && k !== "j" && k !== "g") Eng.keys[k] = 0; });
     addEventListener("blur", () => { Eng.keys.l = Eng.keys.r = Eng.keys.j = 0; });
-    /* لوحة اللمس: يسار = مشي بالسحب دون رفع الإصبع، يمين = قفز وإمساك (تعمل معًا بإصبعين) */
-    const pl = $("#padL"), knob = pl.querySelector(".knob"); let pid = null;
-    const steer = e => { const r = pl.getBoundingClientRect(), dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), d = Math.abs(dx) < .12 ? 0 : dx < 0 ? -1 : 1; Eng.keys.l = d < 0 ? 1 : 0; Eng.keys.r = d > 0 ? 1 : 0; Eng.idleT = 0;
-      knob.style.transform = `translateX(${clamp(dx, -1, 1) * 38}%)`; pl.querySelectorAll(".pk").forEach(p => p.classList.toggle("on", (p.dataset.k === "l" && d < 0) || (p.dataset.k === "r" && d > 0))); };
-    const stop = () => { pid = null; Eng.keys.l = Eng.keys.r = 0; knob.style.transform = ""; pl.querySelectorAll(".pk").forEach(p => p.classList.remove("on")); pl.classList.remove("act"); };
-    pl.addEventListener("pointerdown", e => { e.preventDefault(); pid = e.pointerId; try { pl.setPointerCapture(pid); } catch (x) { } pl.classList.add("act"); steer(e); });
-    pl.addEventListener("pointermove", e => { if (e.pointerId === pid) steer(e); });
-    ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => pl.addEventListener(ev, e => { if (e.pointerId === pid) stop(); }));
-    [["pJ", "j"], ["pG", "g"]].forEach(([id, k]) => { const b = $("#" + id); b.addEventListener("pointerdown", e => { e.preventDefault(); Eng.keys[k] = 1; Eng.idleT = 0; b.classList.add("on"); }); ["pointerup", "pointercancel", "pointerleave"].forEach(ev => b.addEventListener(ev, () => b.classList.remove("on"))); });
-    addEventListener("blur", stop);
+    /* لوحة اللمس: يسار = مشي بالسحب دون رفع الإصبع، يمين = قفز وإمساك (تعمل معًا بإصبعين).
+       نستخدم أحداث اللمس (الأوثق على آيفون/آيباد) ونترك أحداث المؤشر للماوس فقط. */
+    try {
+      const pl = $("#padL"), knob = pl.querySelector(".knob"); let pid = null;
+      const steer = e => { const r = pl.getBoundingClientRect(), dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), d = Math.abs(dx) < .12 ? 0 : dx < 0 ? -1 : 1; Eng.keys.l = d < 0 ? 1 : 0; Eng.keys.r = d > 0 ? 1 : 0; Eng.idleT = 0;
+        knob.style.transform = `translateX(${clamp(dx, -1, 1) * 38}%)`; pl.querySelectorAll(".pk").forEach(p => p.classList.toggle("on", (p.dataset.k === "l" && d < 0) || (p.dataset.k === "r" && d > 0))); };
+      const stop = () => { pid = null; Eng.keys.l = Eng.keys.r = 0; knob.style.transform = ""; pl.querySelectorAll(".pk").forEach(p => p.classList.remove("on")); pl.classList.remove("act"); };
+      const opt = { passive: false };
+      pl.addEventListener("touchstart", e => { e.preventDefault(); const t = e.changedTouches[0]; pid = "t" + t.identifier; pl.classList.add("act"); steer(t); }, opt);
+      pl.addEventListener("touchmove", e => { e.preventDefault(); for (const t of e.changedTouches) if ("t" + t.identifier === pid) steer(t); }, opt);
+      ["touchend", "touchcancel"].forEach(ev => pl.addEventListener(ev, e => { e.preventDefault(); for (const t of e.changedTouches) if ("t" + t.identifier === pid) stop(); }, opt));
+      pl.addEventListener("pointerdown", e => { if (e.pointerType === "touch") return; e.preventDefault(); pid = "p" + e.pointerId; try { pl.setPointerCapture(e.pointerId); } catch (x) { } pl.classList.add("act"); steer(e); });
+      pl.addEventListener("pointermove", e => { if ("p" + e.pointerId === pid) steer(e); });
+      ["pointerup", "pointercancel"].forEach(ev => pl.addEventListener(ev, e => { if ("p" + e.pointerId === pid) stop(); }));
+      [["pJ", "j"], ["pG", "g"]].forEach(([id, k]) => { const b = $("#" + id), go = () => { Eng.keys[k] = 1; Eng.idleT = 0; b.classList.add("on"); }, up = () => b.classList.remove("on");
+        b.addEventListener("touchstart", e => { e.preventDefault(); go(); }, opt); ["touchend", "touchcancel"].forEach(ev => b.addEventListener(ev, e => { e.preventDefault(); up(); }, opt));
+        b.addEventListener("pointerdown", e => { if (e.pointerType === "touch") return; e.preventDefault(); go(); }); ["pointerup", "pointerleave"].forEach(ev => b.addEventListener(ev, up)); });
+      addEventListener("blur", stop);
+    } catch (err) { console.warn("touch pad", err); }
     this.menu(); $("#bSound img").src = `assets/ui/sound_${SFX.on ? "on" : "off"}.png`; const c = cv.getContext("2d"); let last = performance.now();
     const padLbl = () => { const g = $("#pG small"), j = $("#pJ small"); if (g) g.textContent = Eng.K && Eng.K.scene === "light" ? L("أمسكي", "Grab") : L("أرشيف", "Archive"); if (j) j.textContent = L("قفز", "Jump"); };
     let padT = 0; const loop = now => { if (now - padT > 500) { padT = now; padLbl(); } const dt = Math.min(.05, (now - last) / 1000); last = now; Eng.update(dt); Net.tick(dt); Eng.draw(c); requestAnimationFrame(loop); }; requestAnimationFrame(loop);

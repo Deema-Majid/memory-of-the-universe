@@ -91,7 +91,7 @@ input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;bac
 #rotate{display:none}
 @media (orientation:portrait){#rotate{display:flex;position:fixed;inset:0;background:#0d1330;z-index:99;align-items:center;justify-content:center;font:800 28px Cairo;text-align:center;padding:30px;color:#FFE08A}}
 html{touch-action:manipulation}#cv{touch-action:none}
-.pad{position:absolute;bottom:150px;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;z-index:5}
+.pad{position:absolute;bottom:150px;pointer-events:auto;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;z-index:5}
 #padL{left:22px;width:390px;height:172px;border-radius:86px;background:#0b0f2b99;border:4px solid #ffffff44;display:flex;direction:ltr;overflow:hidden;box-shadow:0 8px 24px #0006}
 #padL .pk{flex:1;display:flex;align-items:center;justify-content:center;font-size:56px;color:#FFE08Acc;transition:background .08s}
 #padL .pk.on{background:#FFC83D55;color:#fff}
@@ -101,7 +101,7 @@ html{touch-action:manipulation}#cv{touch-action:none}
 .pb{width:172px;height:172px;border-radius:50%;border:4px solid #ffffff55;background:#0b0f2b99;color:#FFE08A;font:800 60px Cairo;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;box-shadow:0 8px 24px #0006;touch-action:none}
 .pb.small{width:136px;height:136px;font-size:46px;margin-bottom:-6px}
 .pb small{font-size:20px;font-weight:700;opacity:.85;margin-top:2px}.pb.on{background:#FFC83D;color:#2a1a00;transform:scale(.94)}
-@media (hover:hover) and (pointer:fine){.pad{display:none}}
+.pad{display:none!important}body.touch .pad{display:flex!important}
 #hint2{position:absolute}
 @keyframes fadein{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:translateY(24px) scale(.94)}to{opacity:1;transform:none}}
@@ -195,3 +195,6 @@ html{touch-action:manipulation}#cv{touch-action:none}
 .chipb.w.on{background:var(--c);color:#1a1030;border-color:#fff}.chipb.s.on{background:#FFC83D;color:#2a1a00;border-color:#fff}.chipb.boss{border-color:#ff4f5e88}
 .twait{font-size:28px;margin:6px 0 10px}.twait b{color:#FFE08A}
 .me{padding:6px 24px 6px 8px}
+#hud .pad,#hud .pad *{pointer-events:auto}
+#hud .pad .knob{pointer-events:none}
+#hud[data-scene=gravity] #padL{left:540px}

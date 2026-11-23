@@ -1,5 +1,8 @@
 "use strict";
-const TOUCH = !!(window.matchMedia && matchMedia("(hover: none), (pointer: coarse)").matches);
+const TOUCH = !!((navigator.maxTouchPoints || 0) > 0 || "ontouchstart" in window || (window.matchMedia && matchMedia("(pointer: coarse)").matches));
+const markTouch = () => document.body && document.body.classList.add("touch");
+if (TOUCH) { if (document.body) markTouch(); else addEventListener("DOMContentLoaded", markTouch); }
+addEventListener("touchstart", markTouch, { passive: true, once: true });
 /* على الأجهزة اللمسية: نبدّل رموز لوحة المفاتيح بأسماء الأزرار الظاهرة على الشاشة */
 const KB = s => !TOUCH || typeof s !== "string" ? s : s.replace(/ \(أو A وD وW\)| \(or A, D, W\)/g, "").replace(/بالأسهم ← →/g, "بلوحة المشي \u2066◀ ▶\u2069").replace(/with the arrow keys ← →/g, "with the ◀ ▶ pad").replace(/← →/g, "\u2066◀ ▶\u2069").replace(/↓/g, "▼").replace(/↑/g, "▲");
 const $ = (s, r = document) => r.querySelector(s);
