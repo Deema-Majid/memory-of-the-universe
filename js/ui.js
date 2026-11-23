@@ -1,4 +1,43 @@
 "use strict";
+const Story = {
+  cols: ["#E8A33C", "#4CC3D9", "#9B6BFF", "#FF8A5C"], names: ["الثِقل", "المرايا", "المقلاع", "الذاكرة"],
+  run(i) { const cv = $("#sc"); if (!cv) return; const c = cv.getContext("2d"), t0 = performance.now(); this.id = (this.id || 0) + 1; const my = this.id;
+    const loop = now => { if (this.id !== my || !document.body.contains(cv)) return; this.draw(c, i, (now - t0) / 1000); requestAnimationFrame(loop); }; requestAnimationFrame(loop); },
+  glow(c, x, y, r, col, a = 1) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, "rgba(0,0,0,0)"); c.save(); c.globalAlpha = a; c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.restore(); },
+  stars(c, t, n = 40) { c.save(); for (let k = 0; k < n; k++) { const x = (k * 97.3) % 960, y = (k * 53.7) % 540, tw = .4 + .6 * Math.abs(Math.sin(t * 1.5 + k)); c.globalAlpha = tw; c.fillStyle = "#fff"; c.fillRect(x, y, 2 + (k % 3), 2 + (k % 3)); } c.restore(); },
+  robot(c, st, x, gy, t, w = 230, flip = true) { const n = ROBOT[st], im = IMG[`r_${st}_${(Math.floor(t * 6) % n) + 1}`]; if (!im) return; const h = w * im.height / im.width; c.save(); c.translate(x, gy); if (flip) c.scale(-1, 1); c.drawImage(im, -w / 2, -222 * (w / 300), w, h); c.restore(); },
+  draw(c, i, t) {
+    c.clearRect(0, 0, 960, 540); const bgn = [3, 1, 4, 4][i]; c.drawImage(IMG["bg" + bgn], 0, 0, 960, 540); c.fillStyle = "rgba(5,8,30,.35)"; c.fillRect(0, 0, 960, 540); this.stars(c, t);
+    const lt = t % 7;
+    if (i === 0) {
+      const cx = 480, cy = 250, ex = Math.min(1, Math.max(0, (lt - 2.2) / 2)), e = ex * ex * (3 - 2 * ex);
+      c.save(); c.globalAlpha = 1 - .65 * e; this.glow(c, cx, cy, 230 + Math.sin(t * 3) * 14, "rgba(255,190,70,.8)"); c.drawImage(IMG.core, cx - 120 + (lt > 2 && lt < 2.5 ? Math.sin(t * 90) * 4 : 0), cy - 120 + Math.sin(t * 2) * 6, 240, 240); c.restore();
+      const P = [[800, 130], [150, 140], [790, 420], [170, 410]];
+      P.forEach((p, k) => { for (let q = 6; q >= 0; q--) { const ee = Math.max(0, e - q * .035), x = cx + (p[0] - cx) * ee, y = cy + (p[1] - cy) * ee - Math.sin(ee * Math.PI) * 60; this.glow(c, x, y, 34 - q * 3 + (e >= 1 ? Math.sin(t * 4 + k) * 4 : 0), this.cols[k], q ? .12 : .95); } });
+      [["astA", 90], ["astB", 60], ["astC", 40]].forEach(([k, sz], j) => { const x = ((t * (12 + j * 7) + j * 300) % 1100) - 80, y = 60 + j * 150 + Math.sin(t + j) * 20; c.save(); c.translate(x, y); c.rotate(t * .4 + j); c.drawImage(IMG[k], -sz / 2, -sz / 2, sz, sz * .9); c.restore(); });
+    } else if (i === 1) {
+      c.drawImage(IMG.gt1, 0, 440, 600, 100); c.drawImage(IMG.gt1, 600, 440, 600, 100); c.drawImage(IMG.rubble, 560, 380, 260, 150); c.drawImage(IMG.rubble, 80, 400, 200, 120);
+      const awake = lt > 2.5; this.glow(c, 470, 330, awake ? 170 : 90, "rgba(80,180,255,.5)", awake ? .8 : .3);
+      this.robot(c, awake ? "idle" : "low", 470, 470, t, 300 * (awake ? 1 : .98), true);
+      for (let k = 0; k < 5; k++) { const x = (k * 211 + t * 160) % 1000 - 40, y = (k * 97 + t * 90) % 420; c.strokeStyle = "rgba(255,230,160,.7)"; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y); c.lineTo(x - 40, y - 22); c.stroke(); }
+      c.drawImage(IMG.pickup, 700, 350 + Math.sin(t * 3) * 8, 58, 68);
+      if (awake) { c.fillStyle = "#FFE08A"; c.font = "800 54px Cairo"; c.textAlign = "center"; c.fillText("!", 470 + 80, 250 + Math.sin(t * 6) * 4); }
+    } else if (i === 2) {
+      const act = Math.floor(lt / 1.7) % 4;
+      for (let k = 0; k < 4; k++) { const x = 60 + (3 - k) * 225, y = 130, on = k === act, sc = on ? 1.04 : 1;
+        c.save(); c.translate(x + 100, y + 150); c.scale(sc, sc); c.beginPath(); c.roundRect(-100, -150, 200, 300, 26); c.clip(); c.drawImage(IMG["bg" + (k + 1)], -267, -150, 534, 300); c.fillStyle = on ? "rgba(0,0,0,0)" : "rgba(5,8,30,.35)"; c.fillRect(-100, -150, 200, 300); c.restore();
+        c.save(); c.strokeStyle = this.cols[k]; c.lineWidth = on ? 7 : 3; c.beginPath(); c.roundRect(x - (on ? 4 : 0), y - (on ? 4 : 0), 200 + (on ? 8 : 0), 300 + (on ? 8 : 0), 26); c.stroke(); c.restore();
+        c.fillStyle = "#fff"; c.font = "800 32px Cairo"; c.textAlign = "center"; c.fillText(this.names[k], x + 100, y + 345); if (on) this.glow(c, x + 100, y + 150, 160, this.cols[k], .35); }
+      const f = (lt / 1.7) % 1, ax = 60 + (3 - act) * 225 + 100, bx = 60 + (3 - ((act + 1) % 4)) * 225 + 100, rx = ax + (bx - ax) * f;
+      this.robot(c, "jump", rx, 120 - Math.sin(f * Math.PI) * 50 + 40, t * 1.2, 170, bx < ax);
+    } else {
+      c.save(); c.translate(480, 270); c.rotate(t * .15); for (let k = 0; k < 12; k++) { c.rotate(Math.PI / 6); const g = c.createLinearGradient(0, 0, 0, -480); g.addColorStop(0, "rgba(255,200,80,.30)"); g.addColorStop(1, "rgba(255,200,80,0)"); c.fillStyle = g; c.beginPath(); c.moveTo(-18, 0); c.lineTo(18, 0); c.lineTo(60, -480); c.lineTo(-60, -480); c.fill(); } c.restore();
+      this.glow(c, 480, 260, 260 + Math.sin(t * 2) * 20, "rgba(255,190,70,.75)"); c.drawImage(IMG.coreGate, 480 - 140, 60, 280, 340); c.drawImage(IMG.core, 480 - 90, 200 + Math.sin(t * 2) * 10, 180, 180);
+      c.drawImage(IMG.gt4, 0, 440, 600, 100); c.drawImage(IMG.gt4, 600, 440, 600, 100); this.robot(c, lt > 3 ? "success" : "idle", 700, 470, t, 260, true);
+      for (let k = 0; k < 18; k++) { const a = t * .8 + k * 1.7, r = 140 + (k * 37) % 160; c.fillStyle = "rgba(255,230,150,.9)"; c.beginPath(); c.arc(480 + Math.cos(a) * r, 260 + Math.sin(a) * r * .6, 2 + (k % 3), 0, 7); c.fill(); }
+    }
+  }
+};
 const UI = {
   scale: 1, scr: null, unlockAll: /[?&]unlock=1/.test(location.search),
   show(id) { ["menu", "worlds", "stages"].forEach(s => $("#" + s).classList.toggle("hidden", s !== id)); $("#hud").classList.add("hidden"); this.scr = id; Eng.phase = "idle"; Eng.T = null; if (!id) return; },
@@ -13,8 +52,8 @@ const UI = {
   },
   story(done) {
     let i = 0; const go = () => { const s = STORY[i];
-      this.modal(`<img class="sc" src="assets/story/${s.img}.png" alt=""><p>${s.t}</p><div class="row"><button class="btn pri" id="sx">${i < STORY.length - 1 ? "التالي" : "هيا نبدأ"}</button><button class="btn small" id="ss">تخطّي</button></div>`);
-      $("#sx").onclick = () => { SFX.click(); if (++i < STORY.length) go(); else fin(); }; $("#ss").onclick = fin; };
+      this.modal(`<canvas id="sc" class="sc" width="960" height="540"></canvas><p>${s.t}</p><div class="row"><button class="btn pri" id="sx">${i < STORY.length - 1 ? "التالي" : "هيا نبدأ"}</button><button class="btn small" id="ss">تخطّي</button></div>`);
+      $("#sx").onclick = () => { SFX.click(); if (++i < STORY.length) go(); else fin(); }; $("#ss").onclick = fin; Story.run(i); };
     const fin = () => { Save.d.story = true; Save.save(); this.closeModal(); done(); }; go();
   },
   worldStars(w) { return w.stages.reduce((a, _, i) => a + Save.stars(`${w.id - 1}-${i}`), 0); },
@@ -37,7 +76,7 @@ const UI = {
     ["menu", "worlds", "stages"].forEach(s => $("#" + s).classList.add("hidden")); $("#hud").classList.remove("hidden"); this.closeModal();
     const go = () => { SFX.music(wi); Eng.start(wi, si); };
     if (si === 0 && !Save.d["seen" + wi]) { Save.d["seen" + wi] = true; Save.save(); const w = WORLDS[wi];
-      this.modal(`<h3>عالم ${w.name}</h3><p>${w.intro}</p><p style="font-size:26px;color:#9fb0ff">لديك ${AR(ENERGY_MAX)} وحدات طاقة. الاستنتاج الخاطئ يكلّف ٢، والمحاولة الفاشلة تكلّف ١. اضغطي على بطاريات الطاقة في المشهد لجمعها (+٣).</p><div class="row"><button class="btn pri" id="gx">هيا</button></div>`);
+      this.modal(`<h3>عالم ${w.name}</h3><p>${w.intro}</p><p style="font-size:26px;color:#9fb0ff">لديك ${AR(ENERGY_MAX)} وحدات طاقة. الاستنتاج الخاطئ يكلّف ٢، والمحاولة الفاشلة تكلّف ١. حرّكي ذرّة بالأسهم ← → واقفزي بـ ↑ (أو A وD وW)، والمسي البطاريات لجمعها (+٣).</p><div class="row"><button class="btn pri" id="gx">هيا</button></div>`);
       $("#gx").onclick = () => { this.closeModal(); go(); }; } else go();
   },
   /* ---------- HUD ---------- */
@@ -54,7 +93,7 @@ const UI = {
   energy() { let h = ""; for (let i = 0; i < ENERGY_MAX; i++) h += `<div class="ec ${i < Eng.energy ? "" : "off"}"></div>`; $("#energy").innerHTML = h + `<span>${AR(Eng.energy)}</span>`; $("#energy").classList.toggle("low", Eng.energy <= 3); },
   buildSliders() {
     const T = Eng.T, ph = Eng.phase, n = ph === "act" ? T.sliders.length : 1;
-    $("#sliders").innerHTML = T.sliders.slice(0, n).map((s, i) => `<div class="sl"><label><span>${s.label}</span><b id="sv${i}">${AR(T.vals[i])}</b></label><input type="range" id="sr${i}" min="${s.min}" max="${s.max}" step="${s.step}" value="${T.vals[i]}"></div>`).join("");
+    $("#sliders").innerHTML = T.sliders.slice(0, n).map((s, i) => `<div class="sl"><label><span>${s.label}</span><b id="sv${i}">${AR(T.vals[i])}</b></label><input type="range" tabindex="-1" id="sr${i}" min="${s.min}" max="${s.max}" step="${s.step}" value="${T.vals[i]}"></div>`).join("");
     T.sliders.slice(0, n).forEach((s, i) => { const r = $("#sr" + i); r.oninput = () => { T.vals[i] = +r.value; $("#sv" + i).textContent = AR(T.vals[i]); SFX.tick(); if (Eng.K.scene === "light") { T.beam = null; T.mirrors[i].phi = T.vals[i]; } if (Eng.K.scene === "gravity") T.trail = null; }; });
   },
   panel() {
@@ -103,6 +142,11 @@ const UI = {
     $("#bTest").onclick = () => Eng.test(); $("#bDeduce").onclick = () => Eng.deduce(); $("#bAct").onclick = () => Eng.act();
     $("#bHint").onclick = () => Eng.hint(); $("#bPause").onclick = () => this.pause(); $("#bBack").onclick = () => this.stages(Eng.wi); $("#bSound").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); $("#bSound img").src = `assets/ui/sound_${SFX.on ? "on" : "off"}.png`; };
     addEventListener("pointerdown", () => { SFX.unlock(); if (SFX.on && !SFX.mus) SFX.music(SFX.key || "menu"); }, { once: false });
+    const KM = { ArrowLeft: "l", a: "l", A: "l", ArrowRight: "r", d: "r", D: "r", ArrowUp: "j", w: "j", W: "j", " ": "j" };
+    addEventListener("keydown", e => { const k = KM[e.key]; if (!k || $("#hud").classList.contains("hidden")) return; e.preventDefault(); Eng.keys[k] = 1; });
+    addEventListener("keyup", e => { const k = KM[e.key]; if (k && k !== "j") Eng.keys[k] = 0; });
+    addEventListener("blur", () => { Eng.keys.l = Eng.keys.r = Eng.keys.j = 0; });
+    [["pL", "l"], ["pR", "r"], ["pJ", "j"]].forEach(([id, k]) => { const b = $("#" + id); b.addEventListener("pointerdown", e => { e.preventDefault(); Eng.keys[k] = 1; }); ["pointerup", "pointerleave", "pointercancel"].forEach(ev => b.addEventListener(ev, () => { if (k !== "j") Eng.keys[k] = 0; })); });
     this.menu(); $("#bSound img").src = `assets/ui/sound_${SFX.on ? "on" : "off"}.png`; const c = cv.getContext("2d"); let last = performance.now();
     const loop = now => { const dt = Math.min(.05, (now - last) / 1000); last = now; Eng.update(dt); Eng.draw(c); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     window.__ready = true;

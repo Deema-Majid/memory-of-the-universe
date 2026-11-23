@@ -81,7 +81,7 @@ input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;bac
 .mbox .bad{color:#ffb0b0;font-size:27px;background:#4a1a2a;border-radius:16px;padding:12px 18px;margin-bottom:10px}
 .mbox .stars img{width:120px;margin:0 6px}
 .mbox .big{width:180px}
-.mbox img.sc{width:100%;max-width:900px;border-radius:22px;margin-bottom:14px}
+.mbox canvas.sc{width:960px;height:540px;max-width:100%;border-radius:22px;margin-bottom:14px;border:3px solid #ffffff33}
 .laws{display:flex;gap:20px;justify-content:center;margin:16px 0}
 .laws .lw{width:230px;padding:16px;border-radius:24px;border:3px solid #ffffff55;background:#1c2250;cursor:pointer;font:800 28px Cairo;color:#fff}
 .laws .lw img{width:120px;display:block;margin:0 auto 6px}
@@ -90,3 +90,18 @@ input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:50%;bac
 #toast.on{opacity:1;transform:translate(-50%,0)}
 #rotate{display:none}
 @media (orientation:portrait){#rotate{display:flex;position:fixed;inset:0;background:#0d1330;z-index:99;align-items:center;justify-content:center;font:800 28px Cairo;text-align:center;padding:30px;color:#FFE08A}}
+#pad{position:absolute;bottom:146px;left:30px;display:flex;gap:12px;pointer-events:auto;opacity:.75}
+#pad button{width:92px;height:92px;border-radius:50%;border:3px solid #ffffff66;background:#141a42cc;color:#FFE08A;font-size:38px;touch-action:none}
+#pad button:active{background:#FFC83D;color:#2a1a00}
+@media (hover:hover) and (pointer:fine){#pad{display:none}}
+#hint2{position:absolute}
+@keyframes fadein{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateY(24px) scale(.94)}to{opacity:1;transform:none}}
+.screen{animation:fadein .3s ease-out}
+.mbox{animation:pop .28s cubic-bezier(.2,.9,.3,1.2)}
+#modal{animation:fadein .2s}
+.btn,.ib,.opt,.card,.sb,.lw{transition:transform .15s,filter .15s,background .15s,border-color .15s}
+.btn:hover,.ib:hover{filter:brightness(1.15);transform:translateY(-2px)}
+.sb:hover:not(.lock){transform:translateY(-6px)}
+#energy .ec{transition:background .3s,box-shadow .3s}
+.chip{transition:all .3s}

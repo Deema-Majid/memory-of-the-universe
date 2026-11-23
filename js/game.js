@@ -204,7 +204,7 @@ KINDS.gravity = {
 /* ============ المحرّك ============ */
 const Eng = {
   w: null, wi: 0, si: 0, ti: 0, tasks: null, T: null, K: null, energy: 10, phase: "idle", rows: [], cells: [], fx: [], t: 0,
-  robot: { s: "idle", hold: 0 }, losses: 0, lawOk: false, hintUsed: false, solved: false, locked: false,
+  robot: { s: "idle", hold: 0 }, rb: { x: 0, vx: 0, sq: 0, dir: -1, jh: 0, vy: 0, air: false, moving: false }, keys: { l: 0, r: 0, j: 0 }, losses: 0, lawOk: false, hintUsed: false, solved: false, locked: false,
   start(wi, si) {
     this.wi = wi; this.si = si; this.w = WORLDS[wi]; this.energy = ENERGY_MAX; this.ti = 0; this.solved = false; this.locked = false;
     const key = `${wi}-${si}`; this.losses = Save.d.losses[key] || 0;
@@ -213,14 +213,15 @@ const Eng = {
   beginTask() {
     const d = this.tasks[this.ti]; this.K = KINDS[d.kind]; this.T = this.K.make(d.level); this.rows = []; this.fx = [];
     const n = this.tasks.length > 1 ? 2 : 4; this.cells = shuffle(this.K.cellsAt || this.T.cellsAt).slice(0, n).map(p => ({ x: p[0], y: p[1], got: false }));
+    Object.assign(this.rb, { x: this.K.robot.x, dir: -1, jh: 0, vy: 0, air: false, moving: false });
     this.hintUsed = false; this.phase = this.w.id === 4 ? "law" : "measure"; UI.onPhase();
   },
   setRobot(s, hold = 1.2) { this.robot.s = s; this.robot.hold = hold; },
   gain(n) { this.energy = clamp(this.energy + n, 0, ENERGY_MAX); UI.energy(); },
   spend(n, why) { this.energy = Math.max(0, this.energy - n); UI.energy(); this.fx.push({ x: 1370, y: 300, t: 0, txt: `−${AR(n)}`, col: "#ff6b6b" }); SFX.bad(); if (this.energy <= 0) this.lose(); },
-  collect(x, y) {
-    if (this.locked || this.phase === "law") return;
-    for (const c of this.cells) if (!c.got && Math.hypot(c.x - x, c.y - y) < 70) { c.got = true; this.gain(3); SFX.collect(); this.fx.push({ x: c.x, y: c.y - 40, t: 0, txt: "+٣", col: "#5CE08A" }); this.setRobot("success", .8); return; }
+  collect(x, y, rr = 70) {
+    if (this.locked || this.phase === "law" || this.phase === "done") return;
+    for (const c of this.cells) if (!c.got && Math.hypot(c.x - x, c.y - y) < rr) { c.got = true; this.gain(3); SFX.collect(); this.fx.push({ x: c.x, y: c.y - 40, t: 0, txt: "+٣", col: "#5CE08A" }); this.setRobot("success", .8); return; }
   },
   chooseLaw(kind) {
     if (kind === this.tasks[this.ti].kind) { this.phase = "measure"; SFX.good(); UI.onPhase(); UI.toast("صحيح! الآن قيسي."); }
@@ -258,11 +259,22 @@ const Eng = {
   update(dt) {
     this.t += dt; if (!this.T) return;
     const r = this.robot; if (r.hold > 0) { r.hold -= dt; if (r.hold <= 0) r.s = "idle"; }
-    this.K.update(this.T, dt); this.fx.forEach(f => f.t += dt); this.fx = this.fx.filter(f => f.t < 1.2);
+    this.moveRobot(dt); this.K.update(this.T, dt); this.fx.forEach(f => f.t += dt); this.fx = this.fx.filter(f => f.t < 1.2);
+  },
+  moveRobot(dt) {
+    const b = this.rb, can = !document.querySelector("#modal:not(.hidden)") && this.phase !== "law" && this.phase !== "done" && this.phase !== "idle";
+    const dx = can ? (this.keys.r - this.keys.l) : 0, target = dx * 420, acc = (dx ? 2600 : 3400) * dt;
+    b.vx += clamp(target - b.vx, -acc, acc); b.moving = Math.abs(b.vx) > 40 && !b.air; if (Math.abs(b.vx) > 20) b.dir = b.vx > 0 ? 1 : -1;
+    b.x = clamp(b.x + b.vx * dt, 90, 1510); if (b.x <= 90 || b.x >= 1510) b.vx = 0;
+    if (this.keys.j) { if (can && !b.air) { b.air = true; b.vy = 1000; b.sq = -.12; SFX.tone(420, .2, "square", .04, 0, 780); } this.keys.j = 0; }
+    if (b.air) { b.vy -= 1900 * dt; b.jh += b.vy * dt; if (b.jh <= 0) { b.jh = 0; b.air = false; b.vy = 0; b.sq = .14; SFX.tone(110, .08, "sine", .05); } }
+    b.sq += (0 - b.sq) * Math.min(1, dt * 12);
+    if (can) { const gy = this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy; this.collect(b.x, gy - 105 - b.jh, 95); }
+    if (b.moving && Math.floor(this.t * 5) !== this._st) { this._st = Math.floor(this.t * 5); SFX.tone(140, .05, "square", .012); }
   },
   draw(c) {
     c.clearRect(0, 0, W, H); const w = this.w; if (!w || !this.T) return;
-    c.drawImage(IMG["bg" + w.id], 0, 0, W, H);
+    { const off = clamp((this.rb.x - 800) * .05, -40, 40); c.drawImage(IMG["bg" + w.id], -48 - off, -27, W * 1.06, H * 1.06); }
     if (w.gt) for (let x = 0; x < W; x += 600) c.drawImage(IMG[w.gt], x, GY, 600, 220);
     this.K.draw(c, this.T, this.phase);
     this.cells.forEach((p, i) => { if (!p.got) { const bob = Math.sin(this.t * 3 + i) * 6; c.drawImage(IMG.pickup, p.x - 38, p.y - 45 + bob, 76, 90); } });
@@ -270,8 +282,8 @@ const Eng = {
     this.fx.forEach(f => { c.save(); c.globalAlpha = 1 - f.t / 1.2; c.fillStyle = f.col; c.font = "800 44px Cairo"; c.textAlign = "center"; c.fillText(f.txt, f.x, f.y - f.t * 60); c.restore(); });
   },
   drawRobot(c) {
-    let s = this.robot.s; if (s === "idle" && this.energy <= 3 && this.phase !== "done") s = "low"; if (this.phase === "measure" && s === "idle" && this.K.busy(this.T)) s = "scan";
-    if (this.phase === "deduce") s = "think"; const n = ROBOT[s]; const f = (Math.floor(this.t * 6) % n) + 1, im = IMG[`r_${s}_${f}`]; if (!im) return;
-    const R = this.K.robot, w = 300, h = w * im.height / im.width; c.save(); c.translate(R.x, this.w.gt ? Math.min(R.gy, GY) : R.gy); c.scale(-1, 1); c.drawImage(im, -w / 2, -222 * (w / 300), w, h); c.restore();
+    let s = this.robot.s; if (s === "idle" && this.energy <= 3 && this.phase !== "done") s = "low"; if (s === "idle" || s === "low") { if (this.rb.air) s = "jump"; else if (this.rb.moving) s = "roll"; } if (this.phase === "measure" && s === "idle" && this.K.busy(this.T)) s = "scan";
+    if (this.phase === "deduce") s = "think"; const n = ROBOT[s]; const f = (Math.floor(this.t * (s === "roll" ? 10 : 6)) % n) + 1, im = IMG[`r_${s}_${f}`]; if (!im) return;
+    const R = this.K.robot, w = 300, h = w * im.height / im.width; c.save(); c.translate(this.rb.x, (this.w.gt ? Math.min(R.gy, GY) : R.gy) - this.rb.jh); c.scale(this.rb.dir < 0 ? -1 : 1, 1); c.scale(1 - this.rb.sq * .6, 1 + this.rb.sq); c.drawImage(im, -w / 2, -222 * (w / 300), w, h); c.restore();
   }
 };
