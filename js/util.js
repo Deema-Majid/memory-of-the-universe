@@ -1,4 +1,5 @@
 "use strict";
+const BUILD = "1124-0003";
 const TOUCH = !!((navigator.maxTouchPoints || 0) > 0 || "ontouchstart" in window || (window.matchMedia && matchMedia("(pointer: coarse)").matches));
 const markTouch = () => document.body && document.body.classList.add("touch");
 if (TOUCH) { if (document.body) markTouch(); else addEventListener("DOMContentLoaded", markTouch); }

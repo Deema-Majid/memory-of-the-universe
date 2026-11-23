@@ -198,3 +198,4 @@ html{touch-action:manipulation}#cv{touch-action:none}
 #hud .pad,#hud .pad *{pointer-events:auto}
 #hud .pad .knob{pointer-events:none}
 #hud[data-scene=gravity] #padL{left:540px}
+.ver{position:absolute;bottom:14px;left:20px;font-size:18px;opacity:.55;direction:ltr}
