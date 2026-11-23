@@ -5,11 +5,11 @@ const UI = {
   fit() { const s = Math.min(innerWidth / 1600, innerHeight / 900); this.scale = s; $("#stage").style.transform = `scale(${s})`; },
   /* ---------- القوائم ---------- */
   menu() {
-    this.show("menu"); const any = Object.keys(Save.d.stars).length;
+    this.show("menu"); SFX.music("menu"); const any = Object.keys(Save.d.stars).length;
     $("#menu").innerHTML = `<img class="logo" src="assets/logo/logo_stacked_dark.png" alt="ذاكرة الكون"><div class="row"><button class="btn pri" id="mPlay">${any ? "تابعي اللعب" : "ابدئي"}</button><button class="btn" id="mStory">القصة</button><button class="btn" id="mSound">${SFX.on ? "🔊 الصوت" : "🔇 الصوت"}</button></div><p>لعبة فيزياء ثنائية الأبعاد: قيسي · استنتجي · تصرّفي</p>`;
     $("#mPlay").onclick = () => { SFX.click(); if (!Save.d.story) this.story(() => this.worlds()); else this.worlds(); };
     $("#mStory").onclick = () => { SFX.click(); this.story(() => this.menu()); };
-    $("#mSound").onclick = () => { SFX.on = !SFX.on; Save.d.sound = SFX.on; Save.save(); SFX.click(); this.menu(); };
+    $("#mSound").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); SFX.click(); this.menu(); };
   },
   story(done) {
     let i = 0; const go = () => { const s = STORY[i];
@@ -35,7 +35,7 @@ const UI = {
   },
   play(wi, si) {
     ["menu", "worlds", "stages"].forEach(s => $("#" + s).classList.add("hidden")); $("#hud").classList.remove("hidden"); this.closeModal();
-    const go = () => Eng.start(wi, si);
+    const go = () => { SFX.music(wi); Eng.start(wi, si); };
     if (si === 0 && !Save.d["seen" + wi]) { Save.d["seen" + wi] = true; Save.save(); const w = WORLDS[wi];
       this.modal(`<h3>عالم ${w.name}</h3><p>${w.intro}</p><p style="font-size:26px;color:#9fb0ff">لديك ${AR(ENERGY_MAX)} وحدات طاقة. الاستنتاج الخاطئ يكلّف ٢، والمحاولة الفاشلة تكلّف ١. اضغطي على بطاريات الطاقة في المشهد لجمعها (+٣).</p><div class="row"><button class="btn pri" id="gx">هيا</button></div>`);
       $("#gx").onclick = () => { this.closeModal(); go(); }; } else go();
@@ -55,7 +55,7 @@ const UI = {
   buildSliders() {
     const T = Eng.T, ph = Eng.phase, n = ph === "act" ? T.sliders.length : 1;
     $("#sliders").innerHTML = T.sliders.slice(0, n).map((s, i) => `<div class="sl"><label><span>${s.label}</span><b id="sv${i}">${AR(T.vals[i])}</b></label><input type="range" id="sr${i}" min="${s.min}" max="${s.max}" step="${s.step}" value="${T.vals[i]}"></div>`).join("");
-    T.sliders.slice(0, n).forEach((s, i) => { const r = $("#sr" + i); r.oninput = () => { T.vals[i] = +r.value; $("#sv" + i).textContent = AR(T.vals[i]); if (Eng.K.scene === "light") { T.beam = null; T.mirrors[i].phi = T.vals[i]; } if (Eng.K.scene === "gravity") T.trail = null; }; });
+    T.sliders.slice(0, n).forEach((s, i) => { const r = $("#sr" + i); r.oninput = () => { T.vals[i] = +r.value; $("#sv" + i).textContent = AR(T.vals[i]); SFX.tick(); if (Eng.K.scene === "light") { T.beam = null; T.mirrors[i].phi = T.vals[i]; } if (Eng.K.scene === "gravity") T.trail = null; }; });
   },
   panel() {
     const p = $("#panel"), K = Eng.K, rows = Eng.rows; p.className = K.panel; p.style.display = Eng.phase === "law" ? "none" : "";
@@ -88,7 +88,7 @@ const UI = {
   hintModal(t, free) { this.modal(`<h3>تلميح</h3><p>${t}</p><p style="font-size:22px;opacity:.7">${free ? "هذا التلميح مجاني." : "كلّف التلميح وحدة طاقة."}</p><div class="row"><button class="btn pri" id="hx">فهمت</button></div>`); $("#hx").onclick = () => this.closeModal(); },
   pause() { if (Eng.phase === "idle") return; this.modal(`<h3>إيقاف مؤقت</h3><div class="row"><button class="btn pri" id="p1">متابعة</button><button class="btn" id="p2">إعادة المرحلة</button><button class="btn" id="p3">المراحل</button><button class="btn" id="p4">${SFX.on ? "🔊" : "🔇"} الصوت</button></div>`);
     $("#p1").onclick = () => this.closeModal(); $("#p2").onclick = () => { this.closeModal(); Eng.start(Eng.wi, Eng.si); }; $("#p3").onclick = () => { this.closeModal(); this.stages(Eng.wi); };
-    $("#p4").onclick = () => { SFX.on = !SFX.on; Save.d.sound = SFX.on; Save.save(); this.pause(); }; },
+    $("#p4").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); this.pause(); }; },
   winModal(stars) {
     const w = Eng.w, L = w.id === 4 ? null : LAWS[w.law], hasNext = Eng.si < 2, lastWorld = Eng.wi === 3 && Eng.si === 2;
     this.modal(`<h3>${lastWorld ? "استعدتِ ذاكرة الكون! 🎉" : "أحسنتِ!"}</h3><div class="stars">${[1, 2, 3].map(i => `<img src="assets/ui/${i <= stars ? "star" : "star0"}.png" alt="">`).join("")}</div><p>${L ? `<b style="color:#FFE08A">${L.name}</b><br>${L.text}` : "جمعتِ القوانين كلها في الذاكرة."}</p><p style="font-size:24px;opacity:.8">الطاقة المتبقية: ${AR(Eng.energy)}</p><div class="row">${hasNext ? `<button class="btn pri" id="n1">المرحلة التالية</button>` : `<button class="btn pri" id="n1">${Eng.wi < 3 ? "العالم التالي" : "القائمة"}</button>`}<button class="btn" id="n2">إعادة</button><button class="btn" id="n3">المراحل</button></div>`);
@@ -101,8 +101,9 @@ const UI = {
     Save.load(); this.fit(); addEventListener("resize", () => this.fit()); await loadImages();
     const cv = $("#cv"); cv.addEventListener("pointerdown", e => { const r = cv.getBoundingClientRect(); Eng.collect((e.clientX - r.left) / this.scale, (e.clientY - r.top) / this.scale); });
     $("#bTest").onclick = () => Eng.test(); $("#bDeduce").onclick = () => Eng.deduce(); $("#bAct").onclick = () => Eng.act();
-    $("#bHint").onclick = () => Eng.hint(); $("#bPause").onclick = () => this.pause(); $("#bBack").onclick = () => this.stages(Eng.wi);
-    this.menu(); const c = cv.getContext("2d"); let last = performance.now();
+    $("#bHint").onclick = () => Eng.hint(); $("#bPause").onclick = () => this.pause(); $("#bBack").onclick = () => this.stages(Eng.wi); $("#bSound").onclick = () => { SFX.toggle(); Save.d.sound = SFX.on; Save.save(); $("#bSound img").src = `assets/ui/sound_${SFX.on ? "on" : "off"}.png`; };
+    addEventListener("pointerdown", () => { SFX.unlock(); if (SFX.on && !SFX.mus) SFX.music(SFX.key || "menu"); }, { once: false });
+    this.menu(); $("#bSound img").src = `assets/ui/sound_${SFX.on ? "on" : "off"}.png`; const c = cv.getContext("2d"); let last = performance.now();
     const loop = now => { const dt = Math.min(.05, (now - last) / 1000); last = now; Eng.update(dt); Eng.draw(c); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
     window.__ready = true;
   }

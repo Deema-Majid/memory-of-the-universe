@@ -239,7 +239,7 @@ const Eng = {
   },
   act() {
     if (this.K.busy(this.T) || this.phase !== "act" || this.locked) return;
-    this.K.act(this.T); this.setRobot(this.K.scene === "force" ? "push" : "scan", 3); UI.controls();
+    this.K.act(this.T); this.setRobot(this.K.scene === "force" ? "push" : "scan", 3); ({ force: "push", light: "beam", gravity: "launch" })[this.K.scene] && SFX[{ force: "push", light: "beam", gravity: "launch" }[this.K.scene]](); UI.controls();
   },
   actDone(ok, msg) {
     if (ok) { SFX.good(); this.setRobot("success", 1.4); const last = this.ti >= this.tasks.length - 1; this.locked = true;
