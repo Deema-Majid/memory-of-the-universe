@@ -465,7 +465,7 @@ const Eng = {
     const gy0 = this.w.gt ? Math.min(this.K.robot.gy, GY) : this.K.robot.gy;
     if (can) { this.collect(b.x, gy0 - 105 - b.jh, 95);
       const fr = this.frag; if (fr && !fr.got && Math.hypot(fr.x - b.x, fr.y - (gy0 - 105 - b.jh)) < 90) { fr.got = true; Save.d.frags[fr.key] = 1; Save.save(); SFX.law(); this.boom(fr.x, fr.y, ["#7FE8FF", "#FFFFFF", "#FFC83D", "#B06BFF"], 40, 420); this.say("frag", true);
-        const wi = this.wi, n = fragsOf(wi); UI.toast(n >= 3 ? L(`💎 ${AR(3)}/${AR(3)}! فتحتِ لونًا جديدًا لذرّة: ${SKINS[wi + 1].ar}. غيّريه من «الحساب».`, `💎 3/3! You unlocked a new color for Zarra: ${SKINS[wi + 1].en}. Change it in Profile.`) : L(`💎 شظية ذاكرة ${AR(n)}/${AR(3)} في هذا العالم`, `💎 Memory shard ${n}/3 in this world`)); } }
+        const wi = this.wi, n = fragsOf(wi); UI.toast(n >= 3 ? L(`💎 ${AR(3)}/${AR(3)}! فتحتِ إكسسوارًا نادرًا لذرّة: ${ACCS.find(a => a.w === wi).ar} ${ACCS.find(a => a.w === wi).e}. البسيه من «الحساب».`, `💎 3/3! You unlocked a rare accessory for Zarra: ${ACCS.find(a => a.w === wi).en} ${ACCS.find(a => a.w === wi).e}. Wear it from Profile.`) : L(`💎 شظية ذاكرة ${AR(n)}/${AR(3)} في هذا العالم`, `💎 Memory shard ${n}/3 in this world`)); } }
     const hz = this.hz; if (hz) { const [a, z] = this.K.hz, sp = hz.kind === "spark" ? 210 : 165; if ((this.grab != null || this.charge || this.drag) && Math.abs(hz.x - b.x) < 260) hz.dir = hz.x > b.x ? 1 : -1; hz.x += hz.dir * sp * dt; hz.spin += hz.dir * dt * 6; if (hz.x < a) { hz.x = a; hz.dir = 1; } if (hz.x > z) { hz.x = z; hz.dir = -1; }
       if (can && !this.charge && this.grab == null && !this.drag && this.stun <= 0 && !this.K.busy(this.T) && Math.abs(hz.x - b.x) < 78 && b.jh < 75) { const away = b.x >= hz.x ? 1 : -1; b.vx = away * 950; b.air = true; b.vy = 560; this.stun = .55; this.shake = 9; this.grab = null;
         this.setRobot("fail", .7); SFX.bad(); this.say("ouch", true); this.boom(b.x - away * 40, gy0 - 60, hz.kind === "spark" ? ["#7FE8FF", "#fff"] : ["#e9c48a", "#a07a4a"], 14, 260); } }
@@ -494,7 +494,7 @@ const Eng = {
   },
   drawRobot(c) {
     let s = this.robot.s; if (s === "idle" && this.energy <= 3 && this.phase !== "done") s = "low"; if (s === "idle" || s === "low") { if (this.rb.air) s = "jump"; else if (this.rb.moving) s = "roll"; } if (this.phase === "measure" && s === "idle" && this.K.busy(this.T)) s = "scan";
-    if (this.phase === "deduce") s = "think"; const n = ROBOT[s]; const f = (Math.floor(this.t * (s === "roll" ? 10 : 6)) % n) + 1; let im = IMG[`r_${s}_${f}`]; if (!im) return; im = tinted(im, `${s}${f}`);
-    const R = this.K.robot, w = 300, h = w * im.height / im.width; c.save(); c.translate(this.rb.x, (this.w.gt ? Math.min(R.gy, GY) : R.gy) - this.rb.jh); c.scale(this.rb.dir < 0 ? -1 : 1, 1); c.scale(1 - this.rb.sq * .6, 1 + this.rb.sq); c.drawImage(im, -w / 2, -222 * (w / 300), w, h); c.restore();
+    if (this.phase === "deduce") s = "think"; const R = this.K.robot;
+    Robo.draw(c, myLook(), s, Robo.frame(s, this.t), this.rb.x, (this.w.gt ? Math.min(R.gy, GY) : R.gy) - this.rb.jh, 300, this.rb.dir < 0, this.rb.sq, this.t);
   }
 };

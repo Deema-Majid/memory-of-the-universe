@@ -99,15 +99,52 @@ const Save = {
   reset() { this.d = { stars: {}, sound: this.d.sound, story: false, losses: {}, profile: this.d.profile, lang: this.d.lang, laws: {}, frags: {}, skin: 0 }; this.save(); }
 };
 
-/* ---------- ألوان ذرّة (تُفتح بجمع شظايا الذاكرة) ---------- */
-const SKINS = [{ col: null, ar: "الأصلي", en: "Classic" }, { col: "#FFB020", w: 0, ar: "ذهبي", en: "Gold" }, { col: "#28D8FF", w: 1, ar: "سماوي", en: "Sky" }, { col: "#B06BFF", w: 2, ar: "بنفسجي", en: "Violet" }, { col: "#FF4F8B", w: 3, ar: "وردي", en: "Pink" }];
+/* ---------- شكل ذرّة وألوانه ---------- */
+const HEADS = {"fail_01":[253,173,278],"fail_02":[180,178,204],"fail_03":[242,199,204],"idle_01":[259,177,202],"idle_02":[260,171,188],"idle_03":[259,166,186],"idle_04":[259,172,186],"jump_01":[240,231,228],"jump_02":[254,89,200],"jump_03":[231,71,202],"jump_04":[282,86,188],"jump_05":[260,221,244],"low_01":[260,187,212],"low_02":[263,194,194],"low_03":[269,186,198],"push_01":[190,178,204],"push_02":[217,183,202],"push_03":[243,192,202],"push_04":[221,187,202],"roll_01":[270,178,204],"roll_02":[270,174,204],"roll_03":[270,174,204],"roll_04":[270,178,204],"roll_05":[270,174,204],"roll_06":[270,174,204],"scan_01":[199,177,202],"scan_02":[205,178,202],"scan_03":[205,178,202],"scan_04":[205,178,202],"success_01":[259,215,234],"success_02":[241,93,214],"success_03":[260,77,184],"success_04":[260,208,252],"think_01":[319,101,282],"think_02":[325,101,270],"think_03":[225,178,202]};
+const COLORS = [null, "#FF5C5C", "#FF9A3C", "#FFE14D", "#5CE08A", "#28D8FF", "#5B7CFF", "#B06BFF", "#FF4F8B", "#4a5070"];
+const ACCS = [
+  { id: "none", ar: "بدون", en: "None", e: "∅" }, { id: "cap", ar: "كاب", en: "Cap", e: "🧢" }, { id: "bow", ar: "فيونكة", en: "Bow", e: "🎀" },
+  { id: "phones", ar: "سماعات", en: "Headphones", e: "🎧" }, { id: "wizard", ar: "قبعة ساحر", en: "Wizard hat", e: "🧙" },
+  { id: "crown", ar: "تاج", en: "Crown", e: "👑", w: 0 }, { id: "halo", ar: "هالة", en: "Halo", e: "😇", w: 1 }, { id: "wings", ar: "أجنحة", en: "Wings", e: "🪽", w: 2 }, { id: "aura", ar: "هالة كونية", en: "Cosmic aura", e: "🌌", w: 3 }];
 const fragsOf = wi => [0, 1, 2].filter(i => Save.d.frags[`${wi}-${i}`]).length;
-const skinOpen = k => k === 0 || fragsOf(SKINS[k].w) >= 3;
+const accOpen = k => ACCS[k] && (ACCS[k].w === undefined || fragsOf(ACCS[k].w) >= 3);
+const myLook = () => { const l = Save.d.look || {}; return { body: l.body || 0, acc: accOpen(l.acc || 0) ? (l.acc || 0) : 0, accCol: l.accCol == null ? 8 : l.accCol }; };
 const _tint = {};
-function tinted(im, key) {
-  const sk = SKINS[Save.d.skin || 0]; if (!sk || !sk.col || !skinOpen(Save.d.skin)) return im;
-  const k = key + sk.col; if (_tint[k]) return _tint[k];
+function tintCol(im, key, col) {
+  if (!col) return im; const k = key + col; if (_tint[k]) return _tint[k];
   const cv = document.createElement("canvas"); cv.width = im.width; cv.height = im.height; const c = cv.getContext("2d");
-  c.drawImage(im, 0, 0); c.globalCompositeOperation = "source-atop"; c.globalAlpha = .42; c.fillStyle = sk.col; c.fillRect(0, 0, cv.width, cv.height);
+  c.drawImage(im, 0, 0); c.globalCompositeOperation = "source-atop"; c.globalAlpha = .42; c.fillStyle = col; c.fillRect(0, 0, cv.width, cv.height);
   return (_tint[k] = cv);
 }
+const Robo = {
+  /* يرسم ذرّة بشكل ولون معيّنين. x,gy: موضع القدمين؛ left: يتجه يسارًا */
+  draw(c, look, st, fi, x, gy, w = 300, left = true, sq = 0, t = 0) {
+    let im = IMG[`r_${st}_${fi}`]; if (!im) return; im = tintCol(im, `${st}${fi}`, COLORS[look.body]);
+    const k = w / 680, h = w * im.height / im.width, hd = HEADS[`${st}_${String(fi).padStart(2, "0")}`] || [259, 175, 200];
+    const hx = hd[0] * k - w / 2, hy = hd[1] * k - 222 * (w / 300), hw = Math.max(70, hd[2]) * k, acc = ACCS[look.acc] ? ACCS[look.acc].id : "none", ac = COLORS[look.accCol] || "#FF4F8B";
+    c.save(); c.translate(x, gy); c.scale(left ? -1 : 1, 1); c.scale(1 - sq * .6, 1 + sq);
+    if (acc === "wings") this.wings(c, hx - hw * .15, hy + hw * .9, hw, ac, t);
+    if (acc === "aura") { const g = c.createRadialGradient(hx, hy + hw * .9, hw * .2, hx, hy + hw * .9, hw * 1.7); [0, .35, .6, 1].forEach((p, i) => g.addColorStop(p, ["rgba(255,255,255,.35)", "#7FE8FF66", "#B06BFF55", "rgba(255,79,139,0)"][i])); c.fillStyle = g; c.beginPath(); c.arc(hx, hy + hw * .9, hw * 1.7, 0, 7); c.fill();
+      for (let i = 0; i < 6; i++) { const a = t * 1.5 + i * 1.05; c.fillStyle = ["#FFE14D", "#7FE8FF", "#FF4F8B"][i % 3]; c.beginPath(); c.arc(hx + Math.cos(a) * hw * 1.3, hy + hw * .9 + Math.sin(a) * hw * .7, 3 + (i % 2) * 2, 0, 7); c.fill(); } }
+    c.drawImage(im, -w / 2, -222 * (w / 300), w, h);
+    this.acc(c, acc, hx, hy, hw, ac, t);
+    c.restore();
+  },
+  wings(c, x, y, s, col, t) { const f = Math.sin(t * 7) * .18; c.save(); c.translate(x, y); for (const sd of [-1, 1]) { c.save(); c.scale(sd, 1); c.rotate(-.55 + f); [[.55, -.05, .62, .2], [.78, .18, .5, .17], [.92, .42, .38, .14]].forEach(([dx, dy, rx, ry], i) => { c.save(); c.translate(dx * s, dy * s - s * .15); c.rotate(.25 + i * .3); c.fillStyle = i ? col : "#ffffff"; c.globalAlpha = .92; c.strokeStyle = "#ffffff"; c.lineWidth = 3; c.beginPath(); c.ellipse(0, 0, rx * s, ry * s, 0, 0, 7); c.fill(); c.globalAlpha = 1; c.stroke(); c.restore(); }); c.restore(); } c.restore(); },
+  acc(c, id, x, y, s, col, t) {
+    c.save(); c.lineJoin = "round"; c.lineCap = "round";
+    if (id === "cap") { c.fillStyle = col; c.strokeStyle = "#1c2250"; c.lineWidth = 4; c.beginPath(); c.ellipse(x, y + s * .12, s * .5, s * .32, 0, Math.PI, 0); c.closePath(); c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(x + s * .42, y + s * .1, s * .36, s * .08, 0, 0, 7); c.fill(); c.stroke(); c.fillStyle = "#fff"; c.beginPath(); c.arc(x, y - s * .2, s * .06, 0, 7); c.fill(); }
+    if (id === "bow") { const bx = x - s * .3, by = y + s * .02; c.fillStyle = col; c.strokeStyle = "#1c2250"; c.lineWidth = 3; for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(bx, by); c.quadraticCurveTo(bx + sd * s * .32, by - s * .3, bx + sd * s * .36, by); c.quadraticCurveTo(bx + sd * s * .32, by + s * .28, bx, by); c.fill(); c.stroke(); }
+      c.beginPath(); c.arc(bx, by, s * .08, 0, 7); c.fill(); c.stroke(); }
+    if (id === "phones") { c.strokeStyle = "#1c2250"; c.lineWidth = s * .12; c.beginPath(); c.arc(x, y + s * .42, s * .56, Math.PI * 1.08, Math.PI * 1.92); c.stroke(); c.strokeStyle = col; c.lineWidth = s * .07; c.stroke();
+      for (const sd of [-1, 1]) { c.fillStyle = col; c.strokeStyle = "#1c2250"; c.lineWidth = 3; c.beginPath(); c.roundRect(x + sd * s * .58 - s * .12, y + s * .3, s * .24, s * .34, s * .08); c.fill(); c.stroke(); } }
+    if (id === "wizard") { c.fillStyle = col; c.strokeStyle = "#1c2250"; c.lineWidth = 4; c.beginPath(); c.moveTo(x - s * .5, y + s * .08); c.quadraticCurveTo(x - s * .1, y - s * .5, x + s * .25, y - s * .95); c.quadraticCurveTo(x + s * .12, y - s * .4, x + s * .5, y + s * .08); c.closePath(); c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(x, y + s * .08, s * .62, s * .1, 0, 0, 7); c.fill(); c.stroke(); c.fillStyle = "#FFE14D"; [[-.1, -.2], [.12, -.5], [.05, .0]].forEach(([a, b]) => { c.beginPath(); c.arc(x + a * s, y + b * s, s * .045, 0, 7); c.fill(); }); }
+    if (id === "crown") { c.fillStyle = "#FFC83D"; c.strokeStyle = "#8a5a00"; c.lineWidth = 3; const w = s * .8, b = y + s * .05; c.beginPath(); c.moveTo(x - w / 2, b); c.lineTo(x - w / 2, b - s * .3); c.lineTo(x - w / 4, b - s * .14); c.lineTo(x, b - s * .4); c.lineTo(x + w / 4, b - s * .14); c.lineTo(x + w / 2, b - s * .3); c.lineTo(x + w / 2, b); c.closePath(); c.fill(); c.stroke();
+      [[-w / 2, -.3], [0, -.4], [w / 2, -.3]].forEach(([dx, dy], i) => { c.fillStyle = [col, "#FF4F5E", col][i]; c.beginPath(); c.arc(x + dx, b + dy * s, s * .06, 0, 7); c.fill(); }); }
+    if (id === "halo") { c.shadowColor = "#FFE14D"; c.shadowBlur = 18; c.strokeStyle = "#FFE98A"; c.lineWidth = s * .08; c.beginPath(); c.ellipse(x, y - s * .28 + Math.sin(t * 3) * 4, s * .42, s * .12, 0, 0, 7); c.stroke(); }
+    c.restore();
+  },
+  frame(st, t) { const n = ROBOT[st] || 1; return (Math.floor(t * (st === "roll" ? 10 : 6)) % n) + 1; }
+};
