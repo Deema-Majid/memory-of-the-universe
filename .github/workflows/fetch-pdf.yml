@@ -1,0 +1,30 @@
+name: Fetch presentation PDF
+on:
+  push:
+    branches: [main]
+    paths: [promo/pdf_url.txt]
+permissions:
+  contents: write
+  actions: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download PDF
+        run: |
+          curl -sSfL "$(cat promo/pdf_url.txt)" -o promo/presentation.pdf
+          head -c 5 promo/presentation.pdf | grep -q '%PDF'
+      - name: Commit PDF
+        run: |
+          git config user.name "Deema-Majid"
+          git config user.email "Deema-Majid@users.noreply.github.com"
+          git rm -q --cached promo/pdf_url.txt || true
+          rm -f promo/pdf_url.txt
+          git add promo/presentation.pdf
+          git commit -m "ملف العرض التقديمي PDF"
+          git push
+      - name: Redeploy Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
