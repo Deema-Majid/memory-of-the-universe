@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="570" viewBox="0 0 680 570">
+  <defs>
+    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#c9d3e0"/>
+    </linearGradient>
+    <linearGradient id="arm" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c9d3e0"/>
+      <stop offset="1" stop-color="#9aa8ba"/>
+    </linearGradient>
+  </defs>
+  <g stroke="#3d4a5c" stroke-width="8" stroke-linejoin="round" stroke-linecap="round">
+    <!-- right arm waving (viewer right) -->
+    <path d="M334 278 L392 218 L414 140" fill="none" stroke="#3d4a5c" stroke-width="26"/>
+    <path d="M334 278 L392 218 L414 140" fill="none" stroke="url(#arm)" stroke-width="12"/>
+    <circle cx="392" cy="218" r="12" fill="#e67e22"/>
+    <circle cx="418" cy="126" r="24" fill="#e67e22"/>
+    <circle cx="410" cy="118" r="7" fill="#f6b27a" stroke="none"/>
+
+    <!-- treads -->
+    <rect x="152" y="380" width="216" height="66" rx="33" fill="#2b3445"/>
+    <g fill="#55657a" stroke="#3d4a5c" stroke-width="5">
+      <circle cx="196" cy="413" r="20"/><circle cx="260" cy="413" r="20"/><circle cx="324" cy="413" r="20"/>
+    </g>
+    <g stroke="#d7dee8" stroke-width="6" stroke-linecap="butt">
+      <path d="M184 413 H208 M196 401 V425"/><path d="M248 413 H272 M260 401 V425"/><path d="M312 413 H336 M324 401 V425"/>
+    </g>
+
+    <!-- body -->
+    <rect x="182" y="236" width="156" height="150" rx="34" fill="url(#shell)"/>
+    <rect x="182" y="330" width="156" height="20" fill="#e67e22" stroke="none"/>
+    <rect x="214" y="256" width="92" height="64" rx="14" fill="#0f172a" stroke="#64748b" stroke-width="6"/>
+    <g fill="#22c55e" stroke="none">
+      <rect x="228" y="268" width="16" height="42" rx="5"/><rect x="252" y="268" width="16" height="42" rx="5"/><rect x="276" y="268" width="16" height="42" rx="5"/>
+    </g>
+    <circle cx="199" cy="366" r="5" fill="#94a3b8" stroke="none"/><circle cx="321" cy="366" r="5" fill="#94a3b8" stroke="none"/>
+    <circle cx="186" cy="282" r="15" fill="#64748b"/>
+    <circle cx="334" cy="278" r="15" fill="#64748b"/>
+
+    <!-- left arm resting (viewer left) -->
+    <path d="M186 282 L150 336 L142 388" fill="none" stroke="#3d4a5c" stroke-width="26"/>
+    <path d="M186 282 L150 336 L142 388" fill="none" stroke="url(#arm)" stroke-width="12"/>
+    <circle cx="150" cy="336" r="12" fill="#e67e22"/>
+    <circle cx="140" cy="396" r="20" fill="#e67e22"/>
+    <circle cx="134" cy="390" r="6" fill="#f6b27a" stroke="none"/>
+
+    <!-- antenna -->
+    <path d="M262 88 L270 52" fill="none" stroke-width="8"/>
+    <circle cx="271" cy="46" r="15" fill="#22c55e"/>
+    <circle cx="266" cy="41" r="5" fill="#a7f3c4" stroke="none"/>
+
+    <!-- head -->
+    <rect x="148" y="134" width="30" height="56" rx="12" fill="#e67e22"/>
+    <rect x="342" y="134" width="30" height="56" rx="12" fill="#e67e22"/>
+    <rect x="172" y="86" width="176" height="150" rx="56" fill="url(#shell)"/>
+    <rect x="190" y="114" width="140" height="92" rx="30" fill="#0f172a" stroke="#64748b" stroke-width="6"/>
+    <!-- happy eyes ^ ^ -->
+    <path d="M222 172 Q236 148 250 172" fill="none" stroke="#38bdf8" stroke-width="10"/>
+    <path d="M270 172 Q284 148 298 172" fill="none" stroke="#38bdf8" stroke-width="10"/>
+    <!-- smile -->
+    <path d="M246 186 Q260 198 274 186" fill="none" stroke="#38bdf8" stroke-width="7"/>
+  </g>
+  <!-- blush -->
+  <ellipse cx="214" cy="190" rx="10" ry="5" fill="#f472b6" opacity="0.55"/>
+  <ellipse cx="306" cy="190" rx="10" ry="5" fill="#f472b6" opacity="0.55"/>
+
+  <!-- wave motion lines -->
+  <g fill="none" stroke="#8ccfdc" stroke-width="9" stroke-linecap="round">
+    <path d="M458 104 Q472 128 462 156"/>
+    <path d="M486 86 Q508 128 492 172" opacity="0.7"/>
+    <path d="M384 86 Q372 104 376 124" opacity="0.85"/>
+  </g>
+  <!-- sparkles -->
+  <g fill="#f5b52e" stroke="#b45309" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M128 102 L134 118 L150 124 L134 130 L128 146 L122 130 L106 124 L122 118 Z"/>
+    <path d="M506 214 L510 225 L521 229 L510 233 L506 244 L502 233 L491 229 L502 225 Z"/>
+    <path d="M336 40 L339 49 L348 52 L339 55 L336 64 L333 55 L324 52 L333 49 Z"/>
+  </g>
+</svg>
